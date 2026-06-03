@@ -162,14 +162,12 @@ jobs:
         working-directory: desktop
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # 未签名发布：故意不传 CSC_LINK / APPLE_* / WIN_CSC_* 这些 env。
+          # 当对应 secret 缺失时它们会被渲染成空字符串，而 electron-builder 一旦看到
+          # CSC_LINK 这个 key 就会进入证书签名流程，把空路径当成证书去加载，最终报
+          # "<workdir> not a file" 而失败。拿到 Apple Developer ID / Windows 证书后，
+          # 再把对应签名 env 加回来即可开启签名 + 公证。
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-          CSC_LINK: ${{ secrets.MACOS_CERTIFICATE }}
-          CSC_KEY_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          WIN_CSC_LINK: ${{ secrets.WINDOWS_CERTIFICATE }}
-          WIN_CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
         run: bunx electron-builder ${{ matrix.builder_args }} --publish never
 
       - name: Verify packaged app structure
