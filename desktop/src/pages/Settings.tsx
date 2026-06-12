@@ -57,8 +57,8 @@ import {
 } from '../lib/providerSettingsJson'
 import { copyTextToClipboard } from '../components/chat/clipboard'
 
-const NETWORK_TIMEOUT_MIN_SECONDS = 5
-const NETWORK_TIMEOUT_MAX_SECONDS = 600
+const NETWORK_TIMEOUT_MIN_SECONDS = 30
+const NETWORK_TIMEOUT_MAX_SECONDS = 1800
 const NETWORK_TIMEOUT_STEP_SECONDS = 30
 const SETTINGS_CHECKBOX_INPUT_CLASS = 'settings-checkbox-input peer'
 

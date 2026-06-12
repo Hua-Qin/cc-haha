@@ -174,7 +174,7 @@ describe('settingsStore network persistence', () => {
     window.localStorage.clear()
   })
 
-  it('defaults old user settings to 120s system network settings', async () => {
+  it('defaults old user settings to 600s system network settings', async () => {
     vi.doMock('../api/settings', () => ({
       settingsApi: {
         getUser: vi.fn().mockResolvedValue({}),
@@ -215,7 +215,7 @@ describe('settingsStore network persistence', () => {
     await useSettingsStore.getState().fetchAll()
 
     expect(useSettingsStore.getState().network).toEqual({
-      aiRequestTimeoutMs: 120_000,
+      aiRequestTimeoutMs: 600_000,
       proxy: {
         mode: 'system',
         url: '',
@@ -256,7 +256,7 @@ describe('settingsStore network persistence', () => {
     const { useSettingsStore } = await import('./settingsStore')
 
     await useSettingsStore.getState().setNetwork({
-      aiRequestTimeoutMs: 999_999,
+      aiRequestTimeoutMs: 9_999_999,
       proxy: {
         mode: 'manual',
         url: '  http://127.0.0.1:7890  ',
@@ -264,7 +264,7 @@ describe('settingsStore network persistence', () => {
     })
 
     expect(useSettingsStore.getState().network).toEqual({
-      aiRequestTimeoutMs: 600_000,
+      aiRequestTimeoutMs: 1_800_000,
       proxy: {
         mode: 'manual',
         url: 'http://127.0.0.1:7890',
@@ -272,7 +272,7 @@ describe('settingsStore network persistence', () => {
     })
     expect(updateUser).toHaveBeenCalledWith({
       network: {
-        aiRequestTimeoutMs: 600_000,
+        aiRequestTimeoutMs: 1_800_000,
         proxy: {
           mode: 'manual',
           url: 'http://127.0.0.1:7890',

@@ -468,8 +468,8 @@ describe('Settings > General tab', () => {
     const timeoutInput = screen.getByLabelText('AI request timeout')
     const saveButton = screen.getAllByRole('button', { name: 'Save' })[0]!
 
-    fireEvent.change(timeoutInput, { target: { value: '700' } })
-    expect(screen.getByText('Enter a whole number from 5 to 600 seconds.')).toBeInTheDocument()
+    fireEvent.change(timeoutInput, { target: { value: '2000' } })
+    expect(screen.getByText('Enter a whole number from 30 to 1800 seconds.')).toBeInTheDocument()
     expect(saveButton).toBeDisabled()
 
     fireEvent.change(timeoutInput, { target: { value: '90' } })

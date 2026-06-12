@@ -149,7 +149,7 @@ const DEFAULT_UPDATE_PROXY_SETTINGS: UpdateProxySettings = {
 }
 
 const DEFAULT_NETWORK_SETTINGS: NetworkSettings = {
-  aiRequestTimeoutMs: 120_000,
+  aiRequestTimeoutMs: 600_000,
   proxy: {
     mode: 'system',
     url: '',
@@ -655,7 +655,7 @@ function normalizeNetworkSettings(
   settings: NetworkSettingsInput | undefined,
 ): NetworkSettings {
   const timeout = typeof settings?.aiRequestTimeoutMs === 'number' && Number.isFinite(settings.aiRequestTimeoutMs)
-    ? Math.min(Math.max(Math.round(settings.aiRequestTimeoutMs), 5_000), 600_000)
+    ? Math.min(Math.max(Math.round(settings.aiRequestTimeoutMs), 30_000), 1_800_000)
     : DEFAULT_NETWORK_SETTINGS.aiRequestTimeoutMs
   const proxyMode = settings?.proxy?.mode === 'manual' ? 'manual' : 'system'
 

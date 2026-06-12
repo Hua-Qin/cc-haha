@@ -1074,7 +1074,7 @@ export const en = {
   'settings.general.networkProxyUrlRequired': 'Enter a proxy URL.',
   'settings.general.networkTimeout': 'AI request timeout',
   'settings.general.networkTimeoutValue': '{seconds}s',
-  'settings.general.networkTimeoutHint': 'Applies to provider requests, streaming first responses, and provider connection tests. Supports 5-600 seconds.',
+  'settings.general.networkTimeoutHint': 'Applies to provider requests, streaming first responses, and provider connection tests. Supports 30-1800 seconds; slow providers may need several minutes before the first streamed byte.',
   'settings.general.networkTimeoutUnit': 'sec',
   'settings.general.networkTimeoutDecrease': 'Decrease by 30 seconds',
   'settings.general.networkTimeoutIncrease': 'Increase by 30 seconds',

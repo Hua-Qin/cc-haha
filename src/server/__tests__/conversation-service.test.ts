@@ -727,6 +727,52 @@ describe('ConversationService', () => {
     expect(env.CLAUDE_ENABLE_STREAM_WATCHDOG).toBe('1')
   })
 
+  test('buildChildEnv widens the stream idle window and disables the non-streaming fallback (#766)', async () => {
+    const service = new ConversationService() as any
+    const env = (await service.buildChildEnv(
+      '/tmp',
+      'ws://127.0.0.1:3456/sdk/test-session?token=test-token',
+    )) as Record<string, string>
+
+    // 90s default kills healthy-but-silent third-party streams; 240s keeps the
+    // watchdog useful without aborting slow thinking/prefill phases.
+    expect(env.CLAUDE_STREAM_IDLE_TIMEOUT_MS).toBe('240000')
+    // Non-streaming fallback can never finish for slow providers (first byte
+    // only arrives after FULL generation), so retries must stay streaming.
+    expect(env.CLAUDE_CODE_DISABLE_NONSTREAMING_FALLBACK).toBe('1')
+  })
+
+  test('buildChildEnv respects caller overrides for stream timeout tuning envs', async () => {
+    const service = new ConversationService() as any
+    const previous = {
+      watchdog: process.env.CLAUDE_ENABLE_STREAM_WATCHDOG,
+      idle: process.env.CLAUDE_STREAM_IDLE_TIMEOUT_MS,
+      fallback: process.env.CLAUDE_CODE_DISABLE_NONSTREAMING_FALLBACK,
+    }
+    process.env.CLAUDE_ENABLE_STREAM_WATCHDOG = '0'
+    process.env.CLAUDE_STREAM_IDLE_TIMEOUT_MS = '90000'
+    process.env.CLAUDE_CODE_DISABLE_NONSTREAMING_FALLBACK = '0'
+    try {
+      const env = (await service.buildChildEnv(
+        '/tmp',
+        'ws://127.0.0.1:3456/sdk/test-session?token=test-token',
+      )) as Record<string, string>
+
+      expect(env.CLAUDE_ENABLE_STREAM_WATCHDOG).toBe('0')
+      expect(env.CLAUDE_STREAM_IDLE_TIMEOUT_MS).toBe('90000')
+      expect(env.CLAUDE_CODE_DISABLE_NONSTREAMING_FALLBACK).toBe('0')
+    } finally {
+      for (const [key, value] of [
+        ['CLAUDE_ENABLE_STREAM_WATCHDOG', previous.watchdog],
+        ['CLAUDE_STREAM_IDLE_TIMEOUT_MS', previous.idle],
+        ['CLAUDE_CODE_DISABLE_NONSTREAMING_FALLBACK', previous.fallback],
+      ] as const) {
+        if (value === undefined) delete process.env[key]
+        else process.env[key] = value
+      }
+    }
+  })
+
   test('buildSessionCliArgs forwards the selected runtime model and effort to the CLI process', () => {
     const service = new ConversationService() as any
     const args = service.buildSessionCliArgs(
