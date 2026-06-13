@@ -115,6 +115,19 @@ describe('WorkspaceService outside-workspace preview', () => {
 
     await expect(service.readFile('session-1', unrelatedFile)).rejects.toThrow(/outside workspace/)
   })
+
+  it('does not allow relative traversal through a registered outside dir', async () => {
+    const baseDir = await makeTempDir('workspace-service-base-')
+    const workDir = path.join(baseDir, 'work')
+    const outsideFile = path.join(baseDir, 'outside.txt')
+    await fs.mkdir(workDir)
+    await fs.writeFile(outsideFile, 'secret\n')
+    registerFilesystemAccessRoot(baseDir)
+
+    const service = new WorkspaceService(async (sessionId) => sessionId === 'session-1' ? workDir : null)
+
+    await expect(service.readFile('session-1', '../outside.txt')).rejects.toThrow(/outside workspace/)
+  })
 })
 
 describe('WorkspaceService', () => {

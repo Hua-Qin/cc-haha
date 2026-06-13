@@ -270,12 +270,16 @@ function defaultProviderOrder(providers: SavedProvider[]): string[] {
   ]
 }
 
-function normalizeProviderOrder(providerOrder: string[], providers: SavedProvider[]): string[] {
+function normalizeProviderOrder(providerOrder: string[] | undefined, providers: SavedProvider[]): string[] {
   const knownIds = new Set<string>(defaultProviderOrder(providers))
   const seen = new Set<string>()
   const order: string[] = []
 
-  for (const id of providerOrder.length > 0 ? providerOrder : defaultProviderOrder(providers)) {
+  const source = providerOrder && providerOrder.length > 0
+    ? providerOrder
+    : defaultProviderOrder(providers)
+
+  for (const id of source) {
     if (!knownIds.has(id) || seen.has(id)) continue
     seen.add(id)
     order.push(id)
@@ -292,7 +296,7 @@ function normalizeProviderOrder(providerOrder: string[], providers: SavedProvide
 
 function buildProviderListItems(
   providers: SavedProvider[],
-  providerOrder: string[],
+  providerOrder: string[] | undefined,
 ): ProviderListItem[] {
   const savedItems = new Map(
     providers.map((provider) => [

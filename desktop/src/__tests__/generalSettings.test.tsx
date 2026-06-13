@@ -1547,6 +1547,20 @@ describe('Settings > Providers tab', () => {
     ])
   })
 
+  it('falls back to the default provider order when stored order is missing', () => {
+    providerStoreState.providerOrder = undefined as unknown as string[]
+
+    render(<Settings />)
+
+    const rows = screen.getAllByRole('button', { name: 'Drag to reorder' })
+      .map((handle) => handle.closest('[data-testid]')?.getAttribute('data-testid'))
+    expect(rows).toEqual([
+      'provider-provider-1',
+      'claude-official-provider',
+      'openai-official-provider',
+    ])
+  })
+
   it('requires confirmation before deleting a provider', async () => {
     render(<Settings />)
 

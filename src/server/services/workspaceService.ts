@@ -1065,7 +1065,7 @@ export class WorkspaceService {
       // registered as access roots when the turn checkpoint is built. Preview
       // those by absolute path — they have no workspace-relative form — instead
       // of rejecting them as out-of-sandbox.
-      if (isWithinRegisteredFilesystemRoot(absolutePath)) {
+      if (this.isAbsoluteRequestPath(requestedPath) && isWithinRegisteredFilesystemRoot(absolutePath)) {
         return this.resolveOutsideWorkspacePath(absolutePath, requestedPath)
       }
       throw new Error(`Path is outside workspace: ${requestedPath}`)
@@ -1190,6 +1190,11 @@ export class WorkspaceService {
 
   private isWithinRoot(targetPath: string, rootPath: string): boolean {
     return isSameOrInsidePathForPlatform(targetPath, rootPath)
+  }
+
+  private isAbsoluteRequestPath(requestedPath: string): boolean {
+    const pathApi = process.platform === 'win32' ? path.win32 : path
+    return pathApi.isAbsolute(normalizeDriveRootPathForPlatform(requestedPath))
   }
 
   private normalizeRelativePath(filePath: string): string {
