@@ -19,11 +19,6 @@ const PAGE_SIZE = 50
 const SEARCH_DEBOUNCE_MS = 250
 const MAX_MODEL_CHIPS = 2
 
-/** Skip off-screen row rendering without virtualization (WebKit-friendly). */
-const ROW_CV_STYLE = {
-  contentVisibility: 'auto',
-  containIntrinsicSize: 'auto 56px',
-} as const
 
 export function TraceList() {
   const t = useTranslation()
@@ -263,8 +258,7 @@ function TraceRow({
     <div
       role="listitem"
       aria-label={title}
-      className="group flex h-14 cursor-pointer items-center gap-4 px-5 transition-colors hover:bg-[var(--color-surface-hover)]"
-      style={ROW_CV_STYLE}
+      className="trace-list-row-cv group flex h-14 cursor-pointer items-center gap-4 px-5 transition-colors hover:bg-[var(--color-surface-hover)]"
     >
       <button
         type="button"
