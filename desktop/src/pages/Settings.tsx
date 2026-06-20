@@ -18,7 +18,7 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Copy, Eye, EyeOff, GripVertical, PowerOff, QrCode, RotateCw } from 'lucide-react'
-import { useSettingsStore, UI_ZOOM_DEFAULT, UI_ZOOM_MIN, UI_ZOOM_MAX, UI_ZOOM_STEP } from '../stores/settingsStore'
+import { useSettingsStore, UI_ZOOM_DEFAULT, UI_ZOOM_MIN, UI_ZOOM_MAX, UI_ZOOM_STEP, DEFAULT_PROMPT_OPTIMIZATION_SETTINGS } from '../stores/settingsStore'
 import { useProviderStore } from '../stores/providerStore'
 import { useTranslation, type TranslationKey } from '../i18n'
 import { Modal } from '../components/shared/Modal'
@@ -46,7 +46,7 @@ import { McpSettings } from './McpSettings'
 import { TerminalSettings } from './TerminalSettings'
 import { DiagnosticsSettings } from './DiagnosticsSettings'
 import { commandsApi, type CommandMeta, type CommandSource } from '../api/commands'
-import { Star, StarOff } from 'lucide-react'
+import { Star, StarOff, Move, Edit2, Trash2 } from 'lucide-react'
 import { TraceList } from './TraceList'
 import { ActivitySettings } from './ActivitySettings'
 import { MemorySettings } from './MemorySettings'
@@ -3109,6 +3109,83 @@ export function GeneralSettings() {
         </div>
       )}
 
+      <div className="mt-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-sm font-semibold text-[var(--color-text-primary)]">{t('settings.promptOptimization.title')}</div>
+            <div className="mt-1 text-xs leading-5 text-[var(--color-text-tertiary)]">{t('settings.promptOptimization.description')}</div>
+          </div>
+          <ToggleSwitch
+            checked={settingsStore.promptOptimization.enabled}
+            onChange={(checked) => settingsStore.setPromptOptimization({ ...settingsStore.promptOptimization, enabled: checked })}
+            aria-label={t('settings.promptOptimization.enable')}
+          />
+        </div>
+
+        <div className="mt-3 rounded-lg border border-[var(--color-border)]/70 bg-[var(--color-surface)] p-3">
+          <div className="text-xs text-[var(--color-text-tertiary)]">{t('settings.promptOptimization.enableHint')}</div>
+        </div>
+
+        {settingsStore.promptOptimization.enabled && (
+          <div className="mt-3 space-y-3">
+            <div className="rounded-lg border border-[var(--color-border)]/70 bg-[var(--color-surface)] p-3">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-xs font-medium text-[var(--color-text-secondary)]">{t('settings.promptOptimization.instruction')}</span>
+                <button
+                  type="button"
+                  className="text-xs text-[var(--color-brand)] hover:underline"
+                  onClick={() => settingsStore.setPromptOptimization({ ...settingsStore.promptOptimization, optimizePrompt: DEFAULT_PROMPT_OPTIMIZATION_SETTINGS.optimizePrompt })}
+                >
+                  {t('settings.promptOptimization.resetInstruction')}
+                </button>
+              </div>
+              <div className="text-xs text-[var(--color-text-tertiary)] mb-2">{t('settings.promptOptimization.instructionHint')}</div>
+              <textarea
+                className="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface-container-low)] px-3 py-2 text-xs leading-relaxed text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:border-[var(--color-brand)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand)]/20 resize-none"
+                rows={6}
+                placeholder={t('settings.promptOptimization.instructionPlaceholder')}
+                value={settingsStore.promptOptimization.optimizePrompt}
+                onChange={(e) => settingsStore.setPromptOptimization({ ...settingsStore.promptOptimization, optimizePrompt: e.target.value })}
+              />
+            </div>
+
+            <div className="rounded-lg border border-[var(--color-border)]/70 bg-[var(--color-surface)] p-3">
+              <div className="mb-3 flex items-center justify-between">
+                <span className="text-xs font-medium text-[var(--color-text-secondary)]">{t('settings.promptOptimization.model')}</span>
+                <span className="text-xs text-[var(--color-text-tertiary)]">{t('settings.promptOptimization.modelHint')}</span>
+              </div>
+              <Input
+                value={settingsStore.promptOptimization.model}
+                onChange={(e) => settingsStore.setPromptOptimization({ ...settingsStore.promptOptimization, model: e.target.value })}
+                placeholder="haiku"
+                className="text-xs"
+              />
+            </div>
+
+            <div className="rounded-lg border border-[var(--color-border)]/70 bg-[var(--color-surface)] p-3">
+              <div className="mb-3 flex items-center justify-between">
+                <span className="text-xs font-medium text-[var(--color-text-secondary)]">{t('settings.promptOptimization.temperature')}</span>
+                <span className="text-xs text-[var(--color-text-tertiary)]">{t('settings.promptOptimization.temperatureHint')}</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value={settingsStore.promptOptimization.temperature}
+                  onChange={(e) => settingsStore.setPromptOptimization({ ...settingsStore.promptOptimization, temperature: parseFloat(e.target.value) })}
+                  className="flex-1 h-2 rounded-full bg-[var(--color-surface-container-low)] accent-[var(--color-brand)]"
+                />
+                <span className="w-12 text-right text-xs font-mono text-[var(--color-text-secondary)]">
+                  {settingsStore.promptOptimization.temperature.toFixed(1)}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Confirm dialog for mode switch */}
       <ConfirmDialog
         open={modeSwitchConfirmOpen}
@@ -4186,6 +4263,11 @@ function CommandManagementSettings() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
+  const [editingGroup, setEditingGroup] = useState<string | null>(null)
+  const [groupNameInput, setGroupNameInput] = useState('')
+  const [groupError, setGroupError] = useState('')
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
+  const [moveCommandMenu, setMoveCommandMenu] = useState<{ commandName: string; x: number; y: number } | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -4238,11 +4320,174 @@ function CommandManagementSettings() {
     return groups
   }, [filteredCommands])
 
+  const customCategories = commandManagement.customCategories || {}
+  const groupNames = Object.keys(customCategories)
+
   const togglePin = (commandName: string) => {
     const next = pinnedSet.has(commandName)
       ? commandManagement.pinnedCommands.filter((name) => name !== commandName)
       : [...commandManagement.pinnedCommands, commandName]
-    void setCommandManagement({ pinnedCommands: next })
+    void setCommandManagement({ ...commandManagement, pinnedCommands: next })
+  }
+
+  const getCommandGroup = (commandName: string): string | undefined => {
+    for (const [groupName, commandNames] of Object.entries(customCategories)) {
+      if (commandNames.includes(commandName)) return groupName
+    }
+    return undefined
+  }
+
+  const createGroup = () => {
+    const name = groupNameInput.trim()
+    if (!name) {
+      setGroupError(t('commands.group.nameRequired'))
+      return
+    }
+    if (groupNames.includes(name)) {
+      setGroupError(t('commands.group.nameExists'))
+      return
+    }
+    setGroupError('')
+    const newCategories = { ...customCategories, [name]: [] }
+    void setCommandManagement({ ...commandManagement, customCategories: newCategories })
+    setGroupNameInput('')
+    setEditingGroup(null)
+  }
+
+  const editGroup = () => {
+    const newName = groupNameInput.trim()
+    if (!newName) {
+      setGroupError(t('commands.group.nameRequired'))
+      return
+    }
+    if (editingGroup !== newName && groupNames.includes(newName)) {
+      setGroupError(t('commands.group.nameExists'))
+      return
+    }
+    setGroupError('')
+    if (editingGroup === newName) {
+      setEditingGroup(null)
+      setGroupNameInput('')
+      return
+    }
+    const newCategories: Record<string, string[]> = {}
+    for (const [name, commandNames] of Object.entries(customCategories)) {
+      if (name === editingGroup) {
+        newCategories[newName] = commandNames
+      } else {
+        newCategories[name] = commandNames
+      }
+    }
+    void setCommandManagement({ ...commandManagement, customCategories: newCategories })
+    setEditingGroup(null)
+    setGroupNameInput('')
+  }
+
+  const deleteGroup = (groupName: string) => {
+    const newCategories = { ...customCategories }
+    delete newCategories[groupName]
+    void setCommandManagement({ ...commandManagement, customCategories: newCategories })
+  }
+
+  const moveCommandToGroup = (commandName: string, targetGroup: string | null) => {
+    const newCategories = { ...customCategories }
+    for (const [name, commandNames] of Object.entries(newCategories)) {
+      newCategories[name] = commandNames.filter((name) => name !== commandName)
+    }
+    if (targetGroup && targetGroup !== 'none') {
+      if (!newCategories[targetGroup]) newCategories[targetGroup] = []
+      newCategories[targetGroup].push(commandName)
+    }
+    void setCommandManagement({ ...commandManagement, customCategories: newCategories })
+    setMoveCommandMenu(null)
+  }
+
+  const toggleGroupExpand = (groupName: string) => {
+    const next = new Set(expandedGroups)
+    if (next.has(groupName)) {
+      next.delete(groupName)
+    } else {
+      next.add(groupName)
+    }
+    setExpandedGroups(next)
+  }
+
+  const getCommandsInGroup = (groupName: string): CommandMeta[] => {
+    const commandNames = customCategories[groupName] || []
+    return commands.filter((cmd) => commandNames.includes(cmd.name))
+  }
+
+  const handleMoveButtonClick = (e: React.MouseEvent, commandName: string) => {
+    e.preventDefault()
+    const rect = e.currentTarget.getBoundingClientRect()
+    setMoveCommandMenu({
+      commandName,
+      x: rect.left,
+      y: rect.bottom + 4,
+    })
+  }
+
+  useEffect(() => {
+    const handleClick = () => setMoveCommandMenu(null)
+    document.addEventListener('click', handleClick)
+    return () => document.removeEventListener('click', handleClick)
+  }, [])
+
+  const commandRow = (command: CommandMeta, showGroupMenu = true) => {
+    const isPinned = pinnedSet.has(command.name)
+    const currentGroup = getCommandGroup(command.name)
+
+    return (
+      <li
+        key={command.name}
+        className="flex items-center gap-2 rounded-lg border border-[var(--color-border-separator)] bg-[var(--color-surface-container-lowest)] px-3 py-2.5"
+        data-testid={`command-row-${command.name}`}
+      >
+        <button
+          type="button"
+          onClick={() => togglePin(command.name)}
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-[var(--color-text-tertiary)] transition-colors hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-primary)]"
+          aria-label={isPinned ? t('commands.unpin') : t('commands.pin')}
+          title={isPinned ? t('commands.unpin') : t('commands.pin')}
+          data-testid={`command-pin-${command.name}`}
+        >
+          {isPinned ? (
+            <Star className="h-4 w-4 fill-current text-[var(--color-warning)]" />
+          ) : (
+            <StarOff className="h-4 w-4" />
+          )}
+        </button>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <div className="flex items-center gap-2">
+            <span className="truncate font-mono text-sm text-[var(--color-text-primary)]">
+              /{command.name}
+            </span>
+            <span className="rounded bg-[var(--color-surface-container-high)] px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-[var(--color-text-tertiary)]">
+              {t(`commands.category.${command.source}`)}
+            </span>
+            {currentGroup && (
+              <span className="rounded bg-[var(--color-brand)]/10 px-1.5 py-0.5 text-[10px] font-medium text-[var(--color-brand)]">
+                {currentGroup}
+              </span>
+            )}
+          </div>
+          <span className="truncate text-xs text-[var(--color-text-tertiary)]">
+            {command.description}
+          </span>
+        </div>
+        {showGroupMenu && (
+          <button
+            type="button"
+            onClick={(e) => handleMoveButtonClick(e, command.name)}
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-[var(--color-text-tertiary)] transition-colors hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-primary)]"
+            aria-label={t('commands.group.moveTo')}
+            title={t('commands.group.moveTo')}
+          >
+            <Move className="h-4 w-4" />
+          </button>
+        )}
+      </li>
+    )
   }
 
   return (
@@ -4264,6 +4509,147 @@ function CommandManagementSettings() {
           data-testid="commands-search-input"
         />
       </div>
+
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">
+              {t('commands.group.title')}
+            </h3>
+            <p className="text-xs text-[var(--color-text-tertiary)]">
+              {t('commands.group.description')}
+            </p>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            onClick={() => {
+              setEditingGroup(null)
+              setGroupNameInput('')
+              setGroupError('')
+            }}
+          >
+            {t('commands.group.create')}
+          </Button>
+        </div>
+
+        {editingGroup === null && groupNameInput === '' && groupNames.length === 0 && (
+          <div className="text-sm text-[var(--color-text-tertiary)] py-4">
+            {t('commands.group.empty')}
+          </div>
+        )}
+
+        {editingGroup !== null || groupNameInput !== '' ? (
+          <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-3 mb-3">
+            <div className="text-xs font-medium text-[var(--color-text-secondary)] mb-2">
+              {editingGroup ? t('commands.group.editTitle') : t('commands.group.createTitle')}
+            </div>
+            <Input
+              value={groupNameInput}
+              onChange={(e) => {
+                setGroupNameInput(e.target.value)
+                setGroupError('')
+              }}
+              placeholder={t('commands.group.namePlaceholder')}
+              className="text-sm"
+              autoFocus
+            />
+            {groupError && (
+              <div className="text-xs text-[var(--color-error)] mt-1">{groupError}</div>
+            )}
+            <div className="flex gap-2 mt-3">
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={() => {
+                  setEditingGroup(null)
+                  setGroupNameInput('')
+                  setGroupError('')
+                }}
+              >
+                {t('common.cancel')}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                onClick={editingGroup ? editGroup : createGroup}
+              >
+                {t('commands.group.save')}
+              </Button>
+            </div>
+          </div>
+        ) : null}
+
+        <div className="space-y-2">
+          {groupNames.map((groupName) => {
+            const groupCommands = getCommandsInGroup(groupName)
+            const isExpanded = expandedGroups.has(groupName)
+
+            return (
+              <div
+                key={groupName}
+                className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden"
+              >
+                <div className="flex items-center justify-between px-3 py-2.5">
+                  <button
+                    type="button"
+                    onClick={() => toggleGroupExpand(groupName)}
+                    className="flex items-center gap-2 text-left"
+                  >
+                    <span className="material-symbols-outlined text-[14px] text-[var(--color-text-tertiary)]">
+                      {isExpanded ? 'expand_less' : 'expand_more'}
+                    </span>
+                    <span className="text-sm font-medium text-[var(--color-text-primary)]">
+                      {groupName}
+                    </span>
+                    <span className="text-xs text-[var(--color-text-tertiary)]">
+                      {t('commands.group.count', { count: groupCommands.length })}
+                    </span>
+                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingGroup(groupName)
+                        setGroupNameInput(groupName)
+                        setGroupError('')
+                      }}
+                      className="flex h-6 w-6 items-center justify-center rounded text-[var(--color-text-tertiary)] transition-colors hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-primary)]"
+                      title={t('commands.group.edit')}
+                    >
+                      <Edit2 className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => deleteGroup(groupName)}
+                      className="flex h-6 w-6 items-center justify-center rounded text-[var(--color-text-tertiary)] transition-colors hover:bg-[var(--color-error)]/10 hover:text-[var(--color-error)]"
+                      title={t('commands.group.delete')}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+                {isExpanded && (
+                  <div className="border-t border-[var(--color-border-separator)] px-3 py-2">
+                    {groupCommands.length === 0 ? (
+                      <div className="text-xs text-[var(--color-text-tertiary)] py-2">
+                        {t('commands.group.addCommands')}
+                      </div>
+                    ) : (
+                      <ul className="flex flex-col gap-1">
+                        {groupCommands.map((cmd) => commandRow(cmd, false))}
+                      </ul>
+                    )}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
       {isLoading ? (
         <div className="text-sm text-[var(--color-text-tertiary)]">
           {t('common.loading')}
@@ -4291,48 +4677,39 @@ function CommandManagementSettings() {
                   </span>
                 </h3>
                 <ul className="flex flex-col gap-1.5">
-                  {items.map((command) => {
-                    const isPinned = pinnedSet.has(command.name)
-                    return (
-                      <li
-                        key={command.name}
-                        className="flex items-center gap-3 rounded-lg border border-[var(--color-border-separator)] bg-[var(--color-surface-container-lowest)] px-3 py-2.5"
-                        data-testid={`command-row-${command.name}`}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => togglePin(command.name)}
-                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-[var(--color-text-tertiary)] transition-colors hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-primary)]"
-                          aria-label={isPinned ? t('commands.unpin') : t('commands.pin')}
-                          title={isPinned ? t('commands.unpin') : t('commands.pin')}
-                          data-testid={`command-pin-${command.name}`}
-                        >
-                          {isPinned ? (
-                            <Star className="h-4 w-4 fill-current text-[var(--color-warning)]" />
-                          ) : (
-                            <StarOff className="h-4 w-4" />
-                          )}
-                        </button>
-                        <div className="flex min-w-0 flex-1 flex-col">
-                          <div className="flex items-center gap-2">
-                            <span className="truncate font-mono text-sm text-[var(--color-text-primary)]">
-                              /{command.name}
-                            </span>
-                            <span className="rounded bg-[var(--color-surface-container-high)] px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-[var(--color-text-tertiary)]">
-                              {t(`commands.category.${command.source}`)}
-                            </span>
-                          </div>
-                          <span className="truncate text-xs text-[var(--color-text-tertiary)]">
-                            {command.description}
-                          </span>
-                        </div>
-                      </li>
-                    )
-                  })}
+                  {items.map((command) => commandRow(command))}
                 </ul>
               </section>
             )
           })}
+        </div>
+      )}
+
+      {moveCommandMenu && (
+        <div
+          className="fixed z-50 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg py-1 min-w-[140px]"
+          style={{ left: moveCommandMenu.x, top: moveCommandMenu.y }}
+        >
+          <div className="px-3 py-1.5 text-xs font-medium text-[var(--color-text-tertiary)]">
+            {t('commands.group.moveTo')}
+          </div>
+          <button
+            type="button"
+            onClick={() => moveCommandToGroup(moveCommandMenu.commandName, null)}
+            className="w-full px-3 py-1.5 text-left text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)]"
+          >
+            {t('commands.group.moveToNone')}
+          </button>
+          {groupNames.map((groupName) => (
+            <button
+              key={groupName}
+              type="button"
+              onClick={() => moveCommandToGroup(moveCommandMenu.commandName, groupName)}
+              className="w-full px-3 py-1.5 text-left text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)]"
+            >
+              {groupName}
+            </button>
+          ))}
         </div>
       )}
     </div>

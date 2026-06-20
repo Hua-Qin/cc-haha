@@ -170,7 +170,7 @@ const DEFAULT_NETWORK_SETTINGS: NetworkSettings = {
 const DEFAULT_PROMPT_OPTIMIZATION_PROMPT =
   'You are a prompt rewriting assistant. Rewrite the user\'s message into a clear, specific, and self-contained prompt that preserves the original intent, language, and tone. Output only the rewritten prompt with no preamble or explanation.'
 
-const DEFAULT_PROMPT_OPTIMIZATION_SETTINGS: PromptOptimizationSettings = {
+export const DEFAULT_PROMPT_OPTIMIZATION_SETTINGS: PromptOptimizationSettings = {
   enabled: false,
   optimizePrompt: DEFAULT_PROMPT_OPTIMIZATION_PROMPT,
   model: 'haiku',
