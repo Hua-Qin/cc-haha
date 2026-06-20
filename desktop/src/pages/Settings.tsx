@@ -26,6 +26,7 @@ import { ConfirmDialog } from '../components/shared/ConfirmDialog'
 import { Input } from '../components/shared/Input'
 import { Button } from '../components/shared/Button'
 import { Dropdown } from '../components/shared/Dropdown'
+import { ToggleSwitch } from '../components/shared/ToggleSwitch'
 import type { ThemeMode, UpdateProxyMode, NetworkProxyMode, WebSearchMode, AppMode, ChatSendBehavior, OutputStyleSource } from '../types/settings'
 import type { Locale } from '../i18n'
 import type { SavedProvider, UpdateProviderInput, ProviderTestResult, ModelMapping, Model1mSupport, ApiFormat, ProviderAuthStrategy } from '../types/provider'
@@ -1947,6 +1948,8 @@ export function GeneralSettings() {
     setAppMode: setAppModeAction,
     uiZoom,
     setUiZoom,
+    promptOptimization,
+    setPromptOptimization,
   } = useSettingsStore()
   const activeSessionId = useSessionStore((s) => s.activeSessionId)
   const sessions = useSessionStore((s) => s.sessions)
@@ -3116,9 +3119,9 @@ export function GeneralSettings() {
             <div className="mt-1 text-xs leading-5 text-[var(--color-text-tertiary)]">{t('settings.promptOptimization.description')}</div>
           </div>
           <ToggleSwitch
-            checked={settingsStore.promptOptimization.enabled}
-            onChange={(checked) => settingsStore.setPromptOptimization({ ...settingsStore.promptOptimization, enabled: checked })}
-            aria-label={t('settings.promptOptimization.enable')}
+            checked={promptOptimization.enabled}
+            onChange={(checked) => setPromptOptimization({ ...promptOptimization, enabled: checked })}
+            ariaLabel={t('settings.promptOptimization.enable')}
           />
         </div>
 
@@ -3126,7 +3129,7 @@ export function GeneralSettings() {
           <div className="text-xs text-[var(--color-text-tertiary)]">{t('settings.promptOptimization.enableHint')}</div>
         </div>
 
-        {settingsStore.promptOptimization.enabled && (
+        {promptOptimization.enabled && (
           <div className="mt-3 space-y-3">
             <div className="rounded-lg border border-[var(--color-border)]/70 bg-[var(--color-surface)] p-3">
               <div className="mb-2 flex items-center justify-between">
@@ -3134,7 +3137,7 @@ export function GeneralSettings() {
                 <button
                   type="button"
                   className="text-xs text-[var(--color-brand)] hover:underline"
-                  onClick={() => settingsStore.setPromptOptimization({ ...settingsStore.promptOptimization, optimizePrompt: DEFAULT_PROMPT_OPTIMIZATION_SETTINGS.optimizePrompt })}
+                  onClick={() => setPromptOptimization({ ...promptOptimization, optimizePrompt: DEFAULT_PROMPT_OPTIMIZATION_SETTINGS.optimizePrompt })}
                 >
                   {t('settings.promptOptimization.resetInstruction')}
                 </button>
@@ -3144,8 +3147,8 @@ export function GeneralSettings() {
                 className="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface-container-low)] px-3 py-2 text-xs leading-relaxed text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:border-[var(--color-brand)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand)]/20 resize-none"
                 rows={6}
                 placeholder={t('settings.promptOptimization.instructionPlaceholder')}
-                value={settingsStore.promptOptimization.optimizePrompt}
-                onChange={(e) => settingsStore.setPromptOptimization({ ...settingsStore.promptOptimization, optimizePrompt: e.target.value })}
+                value={promptOptimization.optimizePrompt}
+                onChange={(e) => setPromptOptimization({ ...promptOptimization, optimizePrompt: e.target.value })}
               />
             </div>
 
@@ -3155,8 +3158,8 @@ export function GeneralSettings() {
                 <span className="text-xs text-[var(--color-text-tertiary)]">{t('settings.promptOptimization.modelHint')}</span>
               </div>
               <Input
-                value={settingsStore.promptOptimization.model}
-                onChange={(e) => settingsStore.setPromptOptimization({ ...settingsStore.promptOptimization, model: e.target.value })}
+                value={promptOptimization.model}
+                onChange={(e) => setPromptOptimization({ ...promptOptimization, model: e.target.value })}
                 placeholder="haiku"
                 className="text-xs"
               />
@@ -3173,12 +3176,12 @@ export function GeneralSettings() {
                   min="0"
                   max="1"
                   step="0.1"
-                  value={settingsStore.promptOptimization.temperature}
-                  onChange={(e) => settingsStore.setPromptOptimization({ ...settingsStore.promptOptimization, temperature: parseFloat(e.target.value) })}
+                  value={promptOptimization.temperature}
+                  onChange={(e) => setPromptOptimization({ ...promptOptimization, temperature: parseFloat(e.target.value) })}
                   className="flex-1 h-2 rounded-full bg-[var(--color-surface-container-low)] accent-[var(--color-brand)]"
                 />
                 <span className="w-12 text-right text-xs font-mono text-[var(--color-text-secondary)]">
-                  {settingsStore.promptOptimization.temperature.toFixed(1)}
+                  {promptOptimization.temperature.toFixed(1)}
                 </span>
               </div>
             </div>

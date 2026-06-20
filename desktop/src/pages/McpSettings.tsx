@@ -3,6 +3,7 @@ import { Button } from '../components/shared/Button'
 import { DirectoryPicker } from '../components/shared/DirectoryPicker'
 import { Input } from '../components/shared/Input'
 import { ConfirmDialog } from '../components/shared/ConfirmDialog'
+import { ToggleSwitch } from '../components/shared/ToggleSwitch'
 import { useTranslation } from '../i18n'
 import { useUIStore } from '../stores/uiStore'
 import { useMcpStore } from '../stores/mcpStore'
@@ -269,35 +270,6 @@ function getServerIdentityKey(server: Pick<McpServerRecord, 'name' | 'scope' | '
   return `${server.scope}:${server.name}`
 }
 
-function ToggleSwitch({
-  checked,
-  disabled,
-  onChange,
-}: {
-  checked: boolean
-  disabled?: boolean
-  onChange: () => void
-}) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      disabled={disabled}
-      onClick={onChange}
-      className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${
-        checked ? 'bg-[var(--color-switch-checked-bg)]' : 'bg-[var(--color-border)]'
-      } ${disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
-    >
-      <span
-        className={`inline-block h-6 w-6 transform rounded-full bg-[var(--color-switch-thumb)] shadow-sm transition-transform ${
-          checked ? 'translate-x-7' : 'translate-x-1'
-        }`}
-      />
-    </button>
-  )
-}
-
 function ArraySection({
   title,
   rows,
@@ -395,7 +367,7 @@ function ServerRow({
   server: McpServerRecord
   isBusy: boolean
   onOpen: () => void
-  onToggle: () => void
+  onToggle: (checked: boolean) => void
   t: ReturnType<typeof useTranslation>
 }) {
   return (
