@@ -195,6 +195,7 @@ export const jp: Record<TranslationKey, string> = {
   'settings.tab.skills': 'スキル',
   'settings.tab.mcp': 'MCP',
   'settings.tab.plugins': 'プラグイン',
+  'settings.tab.commands': 'コマンド',
   'settings.tab.diagnostics': '診断',
 
   // Settings > Usage
@@ -750,6 +751,16 @@ export const jp: Record<TranslationKey, string> = {
   'settings.skills.source.mcp': 'MCP',
   'settings.skills.source.bundled': '組み込み',
 
+  // Skills > Install
+  'skills.install.button': 'スキルをオンラインでインストール',
+  'skills.install.title': 'スキルをインストール',
+  'skills.install.sourceLabel': 'スキルソース',
+  'skills.install.sourcePlaceholder': 'URL またはローカルパス',
+  'skills.install.installing': 'インストール中...',
+  'skills.install.success': '{name} のインストールに成功しました',
+  'skills.install.error': 'インストールに失敗しました',
+  'skills.install.overwrite': '同名の既存スキルを上書きする',
+
   // Settings > Memory
   'settings.tab.memory': 'メモリ',
   'settings.memory.title': 'プロジェクトメモリ',
@@ -1165,8 +1176,26 @@ export const jp: Record<TranslationKey, string> = {
   'repoLaunch.dirtyWarning': '未コミットの変更が検出されました。直接切り替えはブロックされる場合があります。このフォルダに触れずに続行するには、独立した worktree を使用してください。',
   'repoLaunch.checkedOutWarning': '選択したブランチは別の worktree で既にチェックアウトされています。直接起動は Git によってブロックされる場合があります。ディレクトリの変更を避けるには「独立した worktree」を使用してください。',
 
+  // ─── Commands ──────────────────────────────────────
+  'commands.title': 'コマンド管理',
+  'commands.description': 'スラッシュコマンドを管理し、お気に入りをピン留めし、カテゴリ別に参照します。',
+  'commands.search': 'コマンドを検索...',
+  'commands.empty': 'コマンドが見つかりません',
+  'commands.category.builtin': '組み込み',
+  'commands.category.skill': 'スキル',
+  'commands.category.plugin': 'プラグイン',
+  'commands.category.mcp': 'MCP',
+  'commands.category.bundled': 'バンドル',
+  'commands.pin': 'ピン留め',
+  'commands.unpin': 'ピン解除',
+
   // ─── Chat Input ──────────────────────────────────────
   'chat.placeholder': '編集、デバッグ、説明を Claude に依頼...',
+  'chat.optimize.success': 'プロンプトの最適化に成功しました',
+  'chat.optimize.error': 'プロンプトの最適化に失敗しました',
+  'chat.optimize.optimizing': '最適化中...',
+  'chat.optimize.button': 'プロンプト最適化',
+  'chat.optimize.disabled': '設定でプロンプト最適化を有効にしてください',
   'chat.placeholderMissing': 'このセッションは見つからないワークスペースを指しています。新しいセッションを作成するか、別のプロジェクトを選択してください。',
   'chat.addFiles': 'ファイルまたは写真を追加',
   'chat.dropFilesTitle': 'ここにファイルをドロップ',

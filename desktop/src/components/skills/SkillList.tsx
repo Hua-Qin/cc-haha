@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Download } from 'lucide-react'
 import { useSkillStore } from '../../stores/skillStore'
 import { useSessionStore } from '../../stores/sessionStore'
 import { useTranslation } from '../../i18n'
+import { SkillInstallDialog } from './SkillInstallDialog'
 import type { SkillMeta, SkillSource } from '../../types/skill'
 
 const SOURCE_ORDER: SkillSource[] = ['user', 'project', 'plugin', 'mcp', 'bundled']
@@ -35,6 +37,7 @@ export function SkillList() {
   const activeSession = sessions.find((session) => session.id === activeSessionId)
   const currentWorkDir = activeSession?.workDir || undefined
   const [searchQuery, setSearchQuery] = useState('')
+  const [installDialogOpen, setInstallDialogOpen] = useState(false)
   const normalizedSearchQuery = searchQuery.trim().toLocaleLowerCase()
 
   useEffect(() => {
@@ -152,6 +155,16 @@ export function SkillList() {
                     <span className="material-symbols-outlined text-[16px]">close</span>
                   </button>
                 )}
+              </div>
+              <div className="mt-3">
+                <button
+                  type="button"
+                  onClick={() => setInstallDialogOpen(true)}
+                  className="inline-flex items-center gap-1.5 rounded-[var(--radius-md)] bg-[image:var(--gradient-btn-primary)] px-3 py-1.5 text-xs font-medium text-[var(--color-btn-primary-fg)] shadow-[var(--shadow-button-primary)] transition-all hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-surface-container-low)]"
+                >
+                  <Download className="h-4 w-4" />
+                  {t('skills.install.button')}
+                </button>
               </div>
               {normalizedSearchQuery && (
                 <p className="mt-2 text-[11px] text-[var(--color-text-tertiary)]">
@@ -296,6 +309,10 @@ export function SkillList() {
           )
         })}
       </div>
+      <SkillInstallDialog
+        open={installDialogOpen}
+        onClose={() => setInstallDialogOpen(false)}
+      />
     </div>
   )
 }

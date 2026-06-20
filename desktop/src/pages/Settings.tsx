@@ -45,6 +45,8 @@ import { ComputerUseSettings } from './ComputerUseSettings'
 import { McpSettings } from './McpSettings'
 import { TerminalSettings } from './TerminalSettings'
 import { DiagnosticsSettings } from './DiagnosticsSettings'
+import { commandsApi, type CommandMeta, type CommandSource } from '../api/commands'
+import { Star, StarOff } from 'lucide-react'
 import { TraceList } from './TraceList'
 import { ActivitySettings } from './ActivitySettings'
 import { MemorySettings } from './MemorySettings'
@@ -206,6 +208,7 @@ export function Settings() {
             <TabButton icon="smart_toy" label={t('settings.tab.agents')} active={activeTab === 'agents'} onClick={() => setActiveTab('agents')} />
             <TabButton icon="auto_awesome" label={t('settings.tab.skills')} active={activeTab === 'skills'} onClick={() => setActiveTab('skills')} />
             <TabButton icon="history_edu" label={t('settings.tab.memory')} active={activeTab === 'memory'} onClick={() => setActiveTab('memory')} />
+            <TabButton icon="bolt" label={t('settings.tab.commands')} active={activeTab === 'commands'} onClick={() => setActiveTab('commands')} />
             <TabButton icon="extension" label={t('settings.tab.plugins')} active={activeTab === 'plugins'} onClick={() => setActiveTab('plugins')} />
             <TabButton icon="mouse" label={t('settings.tab.computerUse')} active={activeTab === 'computerUse'} onClick={() => setActiveTab('computerUse')} />
             <TabButton icon="monitoring" label={t('settings.tab.activity')} active={activeTab === 'activity'} onClick={() => setActiveTab('activity')} />
@@ -230,6 +233,7 @@ export function Settings() {
           {activeTab === 'skills' && <SkillSettings />}
           {activeTab === 'memory' && <MemorySettings />}
           {activeTab === 'plugins' && <PluginSettings />}
+          {activeTab === 'commands' && <CommandManagementSettings />}
           {activeTab === 'computerUse' && <ComputerUseSettings />}
           {activeTab === 'trace' && <TraceList />}
           {activeTab === 'diagnostics' && <DiagnosticsSettings />}
@@ -4164,6 +4168,177 @@ function SkillSettings() {
   )
 }
 
+const COMMAND_SOURCE_ORDER: CommandSource[] = ['builtin', 'skill', 'plugin', 'mcp', 'bundled']
+
+const COMMAND_SOURCE_ICONS: Record<CommandSource, string> = {
+  builtin: 'code',
+  skill: 'auto_awesome',
+  plugin: 'extension',
+  mcp: 'hub',
+  bundled: 'inventory_2',
+}
+
+function CommandManagementSettings() {
+  const t = useTranslation()
+  const commandManagement = useSettingsStore((s) => s.commandManagement)
+  const setCommandManagement = useSettingsStore((s) => s.setCommandManagement)
+  const [commands, setCommands] = useState<CommandMeta[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    setIsLoading(true)
+    setError(null)
+    commandsApi.list()
+      .then((response) => {
+        if (cancelled) return
+        setCommands(response.commands)
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return
+        setError(err instanceof Error ? err.message : 'Failed to load commands')
+      })
+      .finally(() => {
+        if (cancelled) return
+        setIsLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const pinnedSet = useMemo(
+    () => new Set(commandManagement.pinnedCommands),
+    [commandManagement.pinnedCommands],
+  )
+
+  const normalizedSearch = search.trim().toLocaleLowerCase()
+
+  const filteredCommands = useMemo(() => {
+    if (!normalizedSearch) return commands
+    return commands.filter((command) => {
+      const fields = [command.name, command.description, command.category, command.source]
+      return fields.some((field) => field?.toLocaleLowerCase().includes(normalizedSearch))
+    })
+  }, [commands, normalizedSearch])
+
+  const grouped = useMemo(() => {
+    const groups: Record<CommandSource, CommandMeta[]> = {
+      builtin: [],
+      skill: [],
+      plugin: [],
+      mcp: [],
+      bundled: [],
+    }
+    for (const command of filteredCommands) {
+      groups[command.source]?.push(command)
+    }
+    return groups
+  }, [filteredCommands])
+
+  const togglePin = (commandName: string) => {
+    const next = pinnedSet.has(commandName)
+      ? commandManagement.pinnedCommands.filter((name) => name !== commandName)
+      : [...commandManagement.pinnedCommands, commandName]
+    void setCommandManagement({ pinnedCommands: next })
+  }
+
+  return (
+    <div className="w-full min-w-0">
+      <div className="mb-4">
+        <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-1">
+          {t('commands.title')}
+        </h2>
+        <p className="text-sm text-[var(--color-text-tertiary)]">
+          {t('commands.description')}
+        </p>
+      </div>
+      <div className="mb-4 max-w-md">
+        <Input
+          type="text"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder={t('commands.search')}
+          data-testid="commands-search-input"
+        />
+      </div>
+      {isLoading ? (
+        <div className="text-sm text-[var(--color-text-tertiary)]">
+          {t('common.loading')}
+        </div>
+      ) : error ? (
+        <div className="text-sm text-[var(--color-error)]">{error}</div>
+      ) : filteredCommands.length === 0 ? (
+        <div className="text-sm text-[var(--color-text-tertiary)]">
+          {t('commands.empty')}
+        </div>
+      ) : (
+        <div className="flex flex-col gap-6">
+          {COMMAND_SOURCE_ORDER.map((source) => {
+            const items = grouped[source]
+            if (!items || items.length === 0) return null
+            return (
+              <section key={source}>
+                <h3 className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-tertiary)]">
+                  <span className="material-symbols-outlined text-[14px]">
+                    {COMMAND_SOURCE_ICONS[source]}
+                  </span>
+                  {t(`commands.category.${source}`)}
+                  <span className="text-[10px] font-normal text-[var(--color-text-tertiary)]">
+                    {items.length}
+                  </span>
+                </h3>
+                <ul className="flex flex-col gap-1.5">
+                  {items.map((command) => {
+                    const isPinned = pinnedSet.has(command.name)
+                    return (
+                      <li
+                        key={command.name}
+                        className="flex items-center gap-3 rounded-lg border border-[var(--color-border-separator)] bg-[var(--color-surface-container-lowest)] px-3 py-2.5"
+                        data-testid={`command-row-${command.name}`}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => togglePin(command.name)}
+                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-[var(--color-text-tertiary)] transition-colors hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-primary)]"
+                          aria-label={isPinned ? t('commands.unpin') : t('commands.pin')}
+                          title={isPinned ? t('commands.unpin') : t('commands.pin')}
+                          data-testid={`command-pin-${command.name}`}
+                        >
+                          {isPinned ? (
+                            <Star className="h-4 w-4 fill-current text-[var(--color-warning)]" />
+                          ) : (
+                            <StarOff className="h-4 w-4" />
+                          )}
+                        </button>
+                        <div className="flex min-w-0 flex-1 flex-col">
+                          <div className="flex items-center gap-2">
+                            <span className="truncate font-mono text-sm text-[var(--color-text-primary)]">
+                              /{command.name}
+                            </span>
+                            <span className="rounded bg-[var(--color-surface-container-high)] px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-[var(--color-text-tertiary)]">
+                              {t(`commands.category.${command.source}`)}
+                            </span>
+                          </div>
+                          <span className="truncate text-xs text-[var(--color-text-tertiary)]">
+                            {command.description}
+                          </span>
+                        </div>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </section>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function PluginSettings() {
   const selectedPlugin = usePluginStore((s) => s.selectedPlugin)
   const t = useTranslation()
@@ -4178,12 +4353,16 @@ function PluginSettings() {
 
   return (
     <div className="w-full min-w-0">
-      <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-1">
-        {t('settings.plugins.title')}
-      </h2>
-      <p className="text-sm text-[var(--color-text-tertiary)] mb-4">
-        {t('settings.plugins.description')}
-      </p>
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-1">
+            {t('settings.plugins.title')}
+          </h2>
+          <p className="text-sm text-[var(--color-text-tertiary)]">
+            {t('settings.plugins.description')}
+          </p>
+        </div>
+      </div>
       <PluginList />
     </div>
   )

@@ -61,6 +61,18 @@ export type NetworkSettings = {
   proxy: NetworkProxySettings
 }
 
+export type PromptOptimizationSettings = {
+  enabled: boolean
+  /** The optimization instruction sent to the model as the system prompt. */
+  optimizePrompt: string
+  /** Model alias or full name to use for optimization. Default 'haiku'. */
+  model: string
+  /** Sampling temperature for the optimization call. Default 0.3. */
+  temperature: number
+  /** Optional override for the model's max output tokens. */
+  maxTokens?: number
+}
+
 export type H5AccessSettings = {
   enabled: boolean
   /** Full token, recoverable at any time from the desktop app. Null for pre-#767 data until the token is regenerated. */
@@ -124,6 +136,12 @@ export type UserSettings = {
   }
   language?: string
   desktopTerminal?: Partial<DesktopTerminalSettings>
+  commandManagement?: {
+    pinnedCommands?: string[]
+    hiddenCommands?: string[]
+    customCategories?: Record<string, string[]>
+  }
+  promptOptimization?: Partial<PromptOptimizationSettings>
   [key: string]: unknown
 }
 

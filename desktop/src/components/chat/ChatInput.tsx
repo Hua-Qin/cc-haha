@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
+import { Sparkles } from 'lucide-react'
 import { useTranslation } from '../../i18n'
 import { useChatStore } from '../../stores/chatStore'
 import { SETTINGS_TAB_ID, useTabStore } from '../../stores/tabStore'
@@ -7,6 +8,7 @@ import { useSessionStore } from '../../stores/sessionStore'
 import { useSessionRuntimeStore } from '../../stores/sessionRuntimeStore'
 import { useTeamStore } from '../../stores/teamStore'
 import { useSettingsStore } from '../../stores/settingsStore'
+import { promptOptimizeApi } from '../../api/promptOptimize'
 import {
   formatWorkspaceReferencePrompt,
   useWorkspaceChatContextStore,
@@ -105,6 +107,7 @@ export function ChatInput({ variant = 'default', compact = false }: ChatInputPro
   const [launchTransitioning, setLaunchTransitioning] = useState(false)
   const [editingQueuedMessageId, setEditingQueuedMessageId] = useState<string | null>(null)
   const [editingQueuedMessageText, setEditingQueuedMessageText] = useState('')
+  const [isOptimizingPrompt, setIsOptimizingPrompt] = useState(false)
   const composingRef = useRef(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
@@ -149,6 +152,8 @@ export function ChatInput({ variant = 'default', compact = false }: ChatInputPro
   )
   const currentModel = useSettingsStore((state) => state.currentModel)
   const chatSendBehavior = useSettingsStore((state) => state.chatSendBehavior)
+  const promptOptimizationEnabled = useSettingsStore((state) => state.promptOptimization.enabled)
+  const pinnedCommands = useSettingsStore((state) => state.commandManagement.pinnedCommands)
   const runtimeSelectionKey = runtimeSelection
     ? `${runtimeSelection.providerId ?? 'official'}:${runtimeSelection.modelId}:${runtimeSelection.effortLevel ?? 'auto'}`
     : undefined
@@ -462,8 +467,8 @@ export function ChatInput({ variant = 'default', compact = false }: ChatInputPro
   )
 
   const filteredCommands = useMemo(() => {
-    return filterSlashCommands(allSlashCommands, slashFilter)
-  }, [allSlashCommands, slashFilter])
+    return filterSlashCommands(allSlashCommands, slashFilter, pinnedCommands)
+  }, [allSlashCommands, slashFilter, pinnedCommands])
 
   const exactSlashCommand = useMemo(() => {
     const normalized = slashFilter.trim().toLowerCase()
@@ -593,6 +598,61 @@ export function ChatInput({ variant = 'default', compact = false }: ChatInputPro
       setLaunchTransitioning(false)
     }
   }, [activeTabId, replaceEmptySession, t])
+
+  const handleOptimizePrompt = useCallback(async () => {
+    if (isMemberSession) return
+    if (isOptimizingPrompt) return
+    const text = inputRef.current
+    if (!text || text.trim().length === 0) return
+
+    const sessionId = activeTabId ?? undefined
+    const messages = sessionState?.messages ?? []
+    const recentMessages = messages
+      .filter((message) => message.type === 'user_text' || message.type === 'assistant_text')
+      .slice(-6)
+      .map((message) => ({
+        role: message.type === 'user_text' ? ('user' as const) : ('assistant' as const),
+        content: (message as { content?: string }).content ?? '',
+      }))
+      .filter((entry) => entry.content.length > 0)
+
+    setIsOptimizingPrompt(true)
+    try {
+      const result = await promptOptimizeApi.optimize({
+        text,
+        ...(sessionId ? { sessionId } : {}),
+        ...(recentMessages.length > 0 ? { context: { recentMessages } } : {}),
+      })
+      const optimized = result.optimizedText
+      if (typeof optimized === 'string' && optimized.length > 0) {
+        setComposerInput(optimized)
+        useChatStore.getState().setComposerDraft(sessionId ?? activeTabId ?? '', {
+          input: optimized,
+          attachments: attachmentsRef.current,
+        })
+        requestAnimationFrame(() => {
+          const el = textareaRef.current
+          if (!el) return
+          el.focus()
+          const cursor = optimized.length
+          el.setSelectionRange(cursor, cursor)
+        })
+        useUIStore.getState().addToast({
+          type: 'success',
+          message: t('chat.optimize.success'),
+        })
+      }
+    } catch (error) {
+      useUIStore.getState().addToast({
+        type: 'error',
+        message: error instanceof Error && error.message
+          ? error.message
+          : t('chat.optimize.error'),
+      })
+    } finally {
+      setIsOptimizingPrompt(false)
+    }
+  }, [activeTabId, isMemberSession, isOptimizingPrompt, sessionState?.messages, setComposerInput, t])
 
   const handleSubmit = async () => {
     const text = input.trim()
@@ -1057,6 +1117,11 @@ export function ChatInput({ variant = 'default', compact = false }: ChatInputPro
                       <span className="shrink-0 text-sm font-semibold text-[var(--color-text-primary)]">
                         /{command.name}
                       </span>
+                      {command.category ? (
+                        <span className="shrink-0 rounded bg-[var(--color-surface-container-high)] px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-[var(--color-text-tertiary)]">
+                          {command.category}
+                        </span>
+                      ) : null}
                       {command.argumentHint ? (
                         <span className="min-w-0 truncate font-mono text-[11px] text-[var(--color-text-tertiary)]">
                           {command.argumentHint}
@@ -1281,6 +1346,27 @@ export function ChatInput({ variant = 'default', compact = false }: ChatInputPro
               )}
               {!isMemberSession && activeTabId && (
                 <ModelSelector runtimeKey={activeTabId} disabled={isActive} compact={useCompactControls} />
+              )}
+              {!isMemberSession && (
+                <button
+                  type="button"
+                  onClick={() => void handleOptimizePrompt()}
+                  disabled={isOptimizingPrompt || !promptOptimizationEnabled || input.trim().length === 0}
+                  aria-label={isOptimizingPrompt ? t('chat.optimize.optimizing') : t('chat.optimize.button')}
+                  title={
+                    isOptimizingPrompt
+                      ? t('chat.optimize.optimizing')
+                      : !promptOptimizationEnabled
+                        ? t('chat.optimize.disabled')
+                        : t('chat.optimize.button')
+                  }
+                  className={`inline-flex shrink-0 items-center justify-center gap-1 rounded-lg text-xs font-semibold transition-all hover:brightness-105 disabled:opacity-30 ${
+                    iconOnlyAction ? `${isMobileComposer ? 'h-11 w-11 rounded-xl px-0 py-0' : 'h-8 w-8 px-0 py-0'}` : 'h-8 px-2.5 py-1.5'
+                  } border border-[var(--color-border)] bg-[var(--color-surface-container-low)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)] disabled:cursor-not-allowed`}
+                >
+                  <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+                  {!iconOnlyAction && (isOptimizingPrompt ? t('chat.optimize.optimizing') : t('chat.optimize.button'))}
+                </button>
               )}
               <button
                 onClick={!isMemberSession && isActive ? () => stopGeneration(activeTabId!) : handleSubmit}

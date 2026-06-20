@@ -1,6 +1,11 @@
 import { create } from 'zustand'
 import { skillsApi } from '../api/skills'
-import type { SkillMeta, SkillDetail } from '../types/skill'
+import type {
+  SkillMeta,
+  SkillDetail,
+  SkillInstallResult,
+  InstallableSkill,
+} from '../types/skill'
 
 export type SkillDetailReturnTab = 'skills' | 'plugins'
 
@@ -19,10 +24,15 @@ type SkillStore = {
     cwd?: string,
     returnTab?: SkillDetailReturnTab,
   ) => Promise<void>
+  installSkill: (
+    source: string,
+    options?: { overwrite?: boolean },
+  ) => Promise<SkillInstallResult>
+  listInstallable: () => Promise<InstallableSkill[]>
   clearSelection: () => void
 }
 
-export const useSkillStore = create<SkillStore>((set) => ({
+export const useSkillStore = create<SkillStore>((set, get) => ({
   skills: [],
   selectedSkill: null,
   selectedSkillReturnTab: 'skills',
@@ -58,6 +68,21 @@ export const useSkillStore = create<SkillStore>((set) => ({
         isDetailLoading: false,
       })
     }
+  },
+
+  installSkill: async (source, options) => {
+    const result = await skillsApi.install(source, options)
+    if (result.ok) {
+      // Refresh the skill list so newly installed skills appear immediately.
+      const currentCwd = get().selectedSkill?.skillRoot
+      await get().fetchSkills(currentCwd)
+    }
+    return result
+  },
+
+  listInstallable: async () => {
+    const { skills } = await skillsApi.listInstallable()
+    return skills
   },
 
   clearSelection: () => set({ selectedSkill: null, selectedSkillReturnTab: 'skills' }),

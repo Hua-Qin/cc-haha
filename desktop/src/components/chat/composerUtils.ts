@@ -117,6 +117,7 @@ export type SlashCommandOption = {
   name: string
   description: string
   argumentHint?: string
+  category?: string
 }
 
 export type AgentSlashCommandSource = {
@@ -245,18 +246,30 @@ function getSlashCommandMatchRank(command: SlashCommandOption, filter: string): 
 export function filterSlashCommands(
   commands: ReadonlyArray<SlashCommandOption>,
   filter: string,
+  pinnedCommands?: ReadonlyArray<string>,
 ): SlashCommandOption[] {
   const normalized = filter.toLowerCase()
-  if (!normalized.trim()) return [...commands]
+  const pinnedSet = pinnedCommands && pinnedCommands.length > 0
+    ? new Set(pinnedCommands)
+    : null
+  if (!normalized.trim()) {
+    if (!pinnedSet) return [...commands]
+    return [...commands].sort((a, b) => {
+      const aPinned = pinnedSet.has(a.name) ? 0 : 1
+      const bPinned = pinnedSet.has(b.name) ? 0 : 1
+      return aPinned - bPinned
+    })
+  }
 
   return commands
     .map((command, index) => ({
       command,
       index,
       rank: getSlashCommandMatchRank(command, normalized),
+      pinned: pinnedSet?.has(command.name) ? 0 : 1,
     }))
     .filter((item) => Number.isFinite(item.rank))
-    .sort((a, b) => a.rank - b.rank || a.index - b.index)
+    .sort((a, b) => a.pinned - b.pinned || a.rank - b.rank || a.index - b.index)
     .map((item) => item.command)
 }
 

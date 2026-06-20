@@ -193,6 +193,7 @@ export const en = {
   'settings.tab.skills': 'Skills',
   'settings.tab.mcp': 'MCP',
   'settings.tab.plugins': 'Plugins',
+  'settings.tab.commands': 'Commands',
   'settings.tab.diagnostics': 'Diagnostics',
 
   // Settings > Usage
@@ -748,6 +749,16 @@ export const en = {
   'settings.skills.source.mcp': 'MCP',
   'settings.skills.source.bundled': 'Built-in',
 
+  // Skills > Install
+  'skills.install.button': 'Install skill online',
+  'skills.install.title': 'Install Skill',
+  'skills.install.sourceLabel': 'Skill source',
+  'skills.install.sourcePlaceholder': 'URL or local path',
+  'skills.install.installing': 'Installing...',
+  'skills.install.success': 'Successfully installed {name}',
+  'skills.install.error': 'Installation failed',
+  'skills.install.overwrite': 'Overwrite existing skill with same name',
+
   // Settings > Memory
   'settings.tab.memory': 'Memory',
   'settings.memory.title': 'Project Memory',
@@ -1163,8 +1174,26 @@ export const en = {
   'repoLaunch.dirtyWarning': 'Uncommitted changes detected. Direct switching may be blocked; use isolated worktree to continue without touching this folder.',
   'repoLaunch.checkedOutWarning': 'Selected branch is already checked out in another worktree. Direct launch may be blocked by Git; use "Isolated worktree" to avoid changing directories.',
 
+  // ─── Commands ──────────────────────────────────────
+  'commands.title': 'Command Management',
+  'commands.description': 'Manage slash commands, pin favorites, and browse by category.',
+  'commands.search': 'Search commands...',
+  'commands.empty': 'No commands found',
+  'commands.category.builtin': 'Built-in',
+  'commands.category.skill': 'Skill',
+  'commands.category.plugin': 'Plugin',
+  'commands.category.mcp': 'MCP',
+  'commands.category.bundled': 'Bundled',
+  'commands.pin': 'Pin',
+  'commands.unpin': 'Unpin',
+
   // ─── Chat Input ──────────────────────────────────────
   'chat.placeholder': 'Ask Claude to edit, debug or explain...',
+  'chat.optimize.success': 'Prompt optimized successfully',
+  'chat.optimize.error': 'Failed to optimize prompt',
+  'chat.optimize.optimizing': 'Optimizing...',
+  'chat.optimize.button': 'Optimize Prompt',
+  'chat.optimize.disabled': 'Enable prompt optimization in settings',
   'chat.placeholderMissing': 'This session points to a missing workspace. Create a new session or pick another project.',
   'chat.addFiles': 'Add files or photos',
   'chat.dropFilesTitle': 'Drop files here',

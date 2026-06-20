@@ -195,6 +195,7 @@ export const zh: Record<TranslationKey, string> = {
   'settings.tab.skills': '技能',
   'settings.tab.mcp': 'MCP',
   'settings.tab.plugins': '外掛',
+  'settings.tab.commands': '命令',
   'settings.tab.diagnostics': '診斷',
 
   // Settings > Usage
@@ -750,6 +751,16 @@ export const zh: Record<TranslationKey, string> = {
   'settings.skills.source.mcp': 'MCP',
   'settings.skills.source.bundled': '內建',
 
+  // Skills > Install
+  'skills.install.button': '線上安裝技能',
+  'skills.install.title': '安裝技能',
+  'skills.install.sourceLabel': '技能來源',
+  'skills.install.sourcePlaceholder': 'URL 或本機路徑',
+  'skills.install.installing': '安裝中...',
+  'skills.install.success': '已成功安裝 {name}',
+  'skills.install.error': '安裝失敗',
+  'skills.install.overwrite': '覆蓋已存在的同名技能',
+
   // Settings > Memory
   'settings.tab.memory': '記憶',
   'settings.memory.title': '專案記憶',
@@ -1165,8 +1176,26 @@ export const zh: Record<TranslationKey, string> = {
   'repoLaunch.dirtyWarning': '檢測到未提交變更，直接切換可能會被阻止；使用獨立工作樹可以繼續，且不會改動當前目錄。',
   'repoLaunch.checkedOutWarning': '選中的分支已在其他工作樹中檢出。直接啟動可能會被 Git 阻止；使用“獨立工作樹”可以避免切換當前目錄。',
 
+  // ─── Commands ──────────────────────────────────────
+  'commands.title': '命令管理',
+  'commands.description': '管理斜線命令，置頂常用命令，按分類瀏覽。',
+  'commands.search': '搜尋命令...',
+  'commands.empty': '未找到命令',
+  'commands.category.builtin': '內建',
+  'commands.category.skill': '技能',
+  'commands.category.plugin': '外掛',
+  'commands.category.mcp': 'MCP',
+  'commands.category.bundled': '捆綁',
+  'commands.pin': '置頂',
+  'commands.unpin': '取消置頂',
+
   // ─── Chat Input ──────────────────────────────────────
   'chat.placeholder': '讓 Claude 編輯、除錯或解釋程式碼...',
+  'chat.optimize.success': '提示詞優化成功',
+  'chat.optimize.error': '提示詞優化失敗',
+  'chat.optimize.optimizing': '優化中...',
+  'chat.optimize.button': '優化提示詞',
+  'chat.optimize.disabled': '請在設定中啟用提示詞優化',
   'chat.placeholderMissing': '此會話指向的工作目錄缺失。請新建會話或選擇其他專案。',
   'chat.addFiles': '新增檔案或圖片',
   'chat.dropFilesTitle': '鬆手新增檔案',

@@ -195,6 +195,7 @@ export const zh: Record<TranslationKey, string> = {
   'settings.tab.skills': '技能',
   'settings.tab.mcp': 'MCP',
   'settings.tab.plugins': '插件',
+  'settings.tab.commands': '命令',
   'settings.tab.diagnostics': '诊断',
 
   // Settings > Usage
@@ -750,6 +751,16 @@ export const zh: Record<TranslationKey, string> = {
   'settings.skills.source.mcp': 'MCP',
   'settings.skills.source.bundled': '内置',
 
+  // Skills > Install
+  'skills.install.button': '在线安装技能',
+  'skills.install.title': '安装技能',
+  'skills.install.sourceLabel': '技能源',
+  'skills.install.sourcePlaceholder': 'URL 或本地路径',
+  'skills.install.installing': '安装中...',
+  'skills.install.success': '已成功安装 {name}',
+  'skills.install.error': '安装失败',
+  'skills.install.overwrite': '覆盖已存在的同名技能',
+
   // Settings > Memory
   'settings.tab.memory': '记忆',
   'settings.memory.title': '项目记忆',
@@ -1165,8 +1176,26 @@ export const zh: Record<TranslationKey, string> = {
   'repoLaunch.dirtyWarning': '检测到未提交变更，直接切换可能会被阻止；使用独立工作树可以继续，且不会改动当前目录。',
   'repoLaunch.checkedOutWarning': '选中的分支已在其他工作树中检出。直接启动可能会被 Git 阻止；使用“独立工作树”可以避免切换当前目录。',
 
+  // ─── Commands ──────────────────────────────────────
+  'commands.title': '命令管理',
+  'commands.description': '管理斜杠命令，置顶常用命令，按分类浏览。',
+  'commands.search': '搜索命令...',
+  'commands.empty': '未找到命令',
+  'commands.category.builtin': '内置',
+  'commands.category.skill': '技能',
+  'commands.category.plugin': '插件',
+  'commands.category.mcp': 'MCP',
+  'commands.category.bundled': '捆绑',
+  'commands.pin': '置顶',
+  'commands.unpin': '取消置顶',
+
   // ─── Chat Input ──────────────────────────────────────
   'chat.placeholder': '让 Claude 编辑、调试或解释代码...',
+  'chat.optimize.success': '提示词优化成功',
+  'chat.optimize.error': '提示词优化失败',
+  'chat.optimize.optimizing': '优化中...',
+  'chat.optimize.button': '优化提示词',
+  'chat.optimize.disabled': '请在设置中启用提示词优化',
   'chat.placeholderMissing': '此会话指向的工作目录缺失。请新建会话或选择其他项目。',
   'chat.addFiles': '添加文件或图片',
   'chat.dropFilesTitle': '松手添加文件',

@@ -266,7 +266,7 @@ Examples of the kind of risky actions that warrant user confirmation:
 When you encounter an obstacle, do not use destructive actions as a shortcut to simply make it go away. For instance, try to identify root causes and fix underlying issues rather than bypassing safety checks (e.g. --no-verify). If you discover unexpected state like unfamiliar files, branches, or configuration, investigate before deleting or overwriting, as it may represent the user's in-progress work. For example, typically resolve merge conflicts rather than discarding changes; similarly, if a lock file exists, investigate what process holds it rather than deleting it. In short: only take risky actions carefully, and when in doubt, ask before acting. Follow both the spirit and letter of these instructions - measure twice, cut once.`
 }
 
-function getUsingYourToolsSection(enabledTools: Set<string>): string {
+function getUsingYourToolsSection(enabledTools: Set<string>): string | null {
   const taskToolName = [TASK_CREATE_TOOL_NAME, TODO_WRITE_TOOL_NAME].find(n =>
     enabledTools.has(n),
   )
@@ -280,7 +280,7 @@ function getUsingYourToolsSection(enabledTools: Set<string>): string {
         ? `Break down and manage your work with the ${taskToolName} tool. These tools are helpful for planning your work and helping the user track your progress. Mark each task as completed as soon as you are done with the task. Do not batch up multiple tasks before marking them as completed.`
         : null,
     ].filter(item => item !== null)
-    if (items.length === 0) return ''
+    if (items.length === 0) return null
     return [`# Using your tools`, ...prependBullets(items)].join(`\n`)
   }
 

@@ -28,6 +28,18 @@ const VALID_PERMISSION_MODES = [
 
 export type PermissionMode = (typeof VALID_PERMISSION_MODES)[number]
 
+export type PromptOptimizationSettings = {
+  enabled: boolean
+  /** The optimization instruction sent to the model as the system prompt. */
+  optimizePrompt: string
+  /** Model alias or full name to use for optimization. Default 'haiku'. */
+  model: string
+  /** Sampling temperature for the optimization call. Default 0.3. */
+  temperature: number
+  /** Optional override for the model's max output tokens. */
+  maxTokens?: number
+}
+
 export class SettingsService {
   private static writeLocks = new Map<string, Promise<void>>()
   private projectRoot?: string

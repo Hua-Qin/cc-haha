@@ -195,6 +195,7 @@ export const kr: Record<TranslationKey, string> = {
   'settings.tab.skills': '스킬',
   'settings.tab.mcp': 'MCP',
   'settings.tab.plugins': '플러그인',
+  'settings.tab.commands': '명령',
   'settings.tab.diagnostics': '진단',
 
   // Settings > Usage
@@ -750,6 +751,16 @@ export const kr: Record<TranslationKey, string> = {
   'settings.skills.source.mcp': 'MCP',
   'settings.skills.source.bundled': '기본 제공',
 
+  // Skills > Install
+  'skills.install.button': '온라인으로 스킬 설치',
+  'skills.install.title': '스킬 설치',
+  'skills.install.sourceLabel': '스킬 소스',
+  'skills.install.sourcePlaceholder': 'URL 또는 로컬 경로',
+  'skills.install.installing': '설치 중...',
+  'skills.install.success': '{name} 설치를 완료했습니다',
+  'skills.install.error': '설치 실패',
+  'skills.install.overwrite': '같은 이름의 기존 스킬 덮어쓰기',
+
   // Settings > Memory
   'settings.tab.memory': '메모리',
   'settings.memory.title': '프로젝트 메모리',
@@ -1165,8 +1176,26 @@ export const kr: Record<TranslationKey, string> = {
   'repoLaunch.dirtyWarning': '커밋되지 않은 변경 사항이 감지되었습니다. 직접 전환이 차단될 수 있습니다. 이 폴더를 건드리지 않고 계속하려면 독립 worktree를 사용하세요.',
   'repoLaunch.checkedOutWarning': '선택한 브랜치는 다른 worktree에서 이미 체크아웃되어 있습니다. Git에 의해 직접 시작이 차단될 수 있습니다. 디렉터리 변경을 피하려면 "독립 worktree"를 사용하세요.',
 
+  // ─── Commands ──────────────────────────────────────
+  'commands.title': '명령 관리',
+  'commands.description': '슬래시 명령을 관리하고, 즐겨찾기를 고정하고, 카테고리별로 탐색합니다.',
+  'commands.search': '명령 검색...',
+  'commands.empty': '명령을 찾을 수 없습니다',
+  'commands.category.builtin': '내장',
+  'commands.category.skill': '스킬',
+  'commands.category.plugin': '플러그인',
+  'commands.category.mcp': 'MCP',
+  'commands.category.bundled': '번들',
+  'commands.pin': '고정',
+  'commands.unpin': '고정 해제',
+
   // ─── Chat Input ──────────────────────────────────────
   'chat.placeholder': '편집, 디버그 또는 설명을 Claude에 요청...',
+  'chat.optimize.success': '프롬프트 최적화 성공',
+  'chat.optimize.error': '프롬프트 최적화 실패',
+  'chat.optimize.optimizing': '최적화 중...',
+  'chat.optimize.button': '프롬프트 최적화',
+  'chat.optimize.disabled': '설정에서 프롬프트 최적화를 활성화하세요',
   'chat.placeholderMissing': '이 세션은 없는 작업 공간을 가리킵니다. 새 세션을 만들거나 다른 프로젝트를 선택하세요.',
   'chat.addFiles': '파일 또는 사진 추가',
   'chat.dropFilesTitle': '여기에 파일을 드롭하세요',

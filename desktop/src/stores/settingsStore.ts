@@ -19,6 +19,7 @@ import {
   type PermissionMode,
   type EffortLevel,
   type ModelInfo,
+  type PromptOptimizationSettings,
   type ThemeMode,
   type UpdateProxyMode,
   type UpdateProxySettings,
@@ -84,6 +85,8 @@ type SettingsStore = {
   h5AccessError: string | null
   responseLanguage: string
   uiZoom: number
+  promptOptimization: PromptOptimizationSettings
+  commandManagement: CommandManagementSettings
   isLoading: boolean
   error: string | null
 
@@ -122,10 +125,18 @@ type SettingsStore = {
   fetchAppMode: () => Promise<void>
   setAppMode: (mode: AppMode, portableDir?: string | null) => Promise<void>
   setUiZoom: (zoom: number) => void
+  setPromptOptimization: (partial: Partial<PromptOptimizationSettings>) => Promise<void>
+  setCommandManagement: (partial: Partial<CommandManagementSettings>) => Promise<void>
 }
 
 type NetworkSettingsInput = Partial<Omit<NetworkSettings, 'proxy'>> & {
   proxy?: Partial<NetworkSettings['proxy']>
+}
+
+type CommandManagementSettings = {
+  pinnedCommands: string[]
+  hiddenCommands: string[]
+  customCategories: Record<string, string[]>
 }
 
 const DEFAULT_H5_ACCESS_SETTINGS: H5AccessSettings = {
@@ -154,6 +165,22 @@ const DEFAULT_NETWORK_SETTINGS: NetworkSettings = {
     mode: 'system',
     url: '',
   },
+}
+
+const DEFAULT_PROMPT_OPTIMIZATION_PROMPT =
+  'You are a prompt rewriting assistant. Rewrite the user\'s message into a clear, specific, and self-contained prompt that preserves the original intent, language, and tone. Output only the rewritten prompt with no preamble or explanation.'
+
+const DEFAULT_PROMPT_OPTIMIZATION_SETTINGS: PromptOptimizationSettings = {
+  enabled: false,
+  optimizePrompt: DEFAULT_PROMPT_OPTIMIZATION_PROMPT,
+  model: 'haiku',
+  temperature: 0.3,
+}
+
+const DEFAULT_COMMAND_MANAGEMENT: CommandManagementSettings = {
+  pinnedCommands: [],
+  hiddenCommands: [],
+  customCategories: {},
 }
 
 const DEFAULT_OUTPUT_STYLE = 'default'
@@ -200,6 +227,8 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
   h5AccessError: null,
   responseLanguage: '',
   uiZoom: readStoredAppZoomLevel(),
+  promptOptimization: { ...DEFAULT_PROMPT_OPTIMIZATION_SETTINGS },
+  commandManagement: { ...DEFAULT_COMMAND_MANAGEMENT },
   isLoading: false,
   error: null,
 
@@ -215,6 +244,30 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     const level = normalizeAppZoomLevel(zoom)
     set({ uiZoom: level })
     void applyAppZoomLevel(level)
+  },
+
+  setPromptOptimization: async (partial) => {
+    const prev = get().promptOptimization
+    const next = normalizePromptOptimizationSettings({ ...prev, ...partial })
+    set({ promptOptimization: next })
+    try {
+      await settingsApi.updateUser({ promptOptimization: next })
+    } catch (error) {
+      set({ promptOptimization: prev })
+      throw error
+    }
+  },
+
+  setCommandManagement: async (partial) => {
+    const prev = get().commandManagement
+    const next = normalizeCommandManagement({ ...prev, ...partial })
+    set({ commandManagement: next })
+    try {
+      await settingsApi.updateUser({ commandManagement: next })
+    } catch (error) {
+      set({ commandManagement: prev })
+      throw error
+    }
   },
 
   fetchAll: async () => {
@@ -254,6 +307,8 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
         h5AccessDiagnostics: h5AccessResult.diagnostics,
         h5AccessError: h5AccessResult.error,
         responseLanguage: typeof userSettings.language === 'string' ? userSettings.language : '',
+        promptOptimization: normalizePromptOptimizationSettings(userSettings.promptOptimization),
+        commandManagement: normalizeCommandManagement(userSettings.commandManagement),
         isLoading: false,
         error: null,
       })
@@ -775,4 +830,49 @@ function isDesktopTerminalStartupShell(value: unknown): value is DesktopTerminal
     || value === 'powershell'
     || value === 'cmd'
     || value === 'custom'
+}
+
+function normalizeCommandManagement(
+  settings: Partial<CommandManagementSettings> | undefined,
+): CommandManagementSettings {
+  const pinned = Array.isArray(settings?.pinnedCommands)
+    ? settings!.pinnedCommands.filter((name): name is string => typeof name === 'string')
+    : DEFAULT_COMMAND_MANAGEMENT.pinnedCommands
+  const hidden = Array.isArray(settings?.hiddenCommands)
+    ? settings!.hiddenCommands.filter((name): name is string => typeof name === 'string')
+    : DEFAULT_COMMAND_MANAGEMENT.hiddenCommands
+  const customCategories = settings?.customCategories && typeof settings.customCategories === 'object'
+    ? Object.fromEntries(
+      Object.entries(settings.customCategories).filter(
+        (entry): entry is [string, string[]] =>
+          Array.isArray(entry[1]) && entry[1].every((name) => typeof name === 'string'),
+      ),
+    )
+    : DEFAULT_COMMAND_MANAGEMENT.customCategories
+  return { pinnedCommands: pinned, hiddenCommands: hidden, customCategories }
+}
+
+function normalizePromptOptimizationSettings(
+  settings: Partial<PromptOptimizationSettings> | undefined,
+): PromptOptimizationSettings {
+  const model = typeof settings?.model === 'string' && settings.model.trim().length > 0
+    ? settings.model.trim()
+    : DEFAULT_PROMPT_OPTIMIZATION_SETTINGS.model
+  const optimizePrompt = typeof settings?.optimizePrompt === 'string'
+    ? settings.optimizePrompt
+    : DEFAULT_PROMPT_OPTIMIZATION_SETTINGS.optimizePrompt
+  const temperature = typeof settings?.temperature === 'number' && Number.isFinite(settings.temperature)
+    ? Math.min(Math.max(settings.temperature, 0), 1)
+    : DEFAULT_PROMPT_OPTIMIZATION_SETTINGS.temperature
+  const maxTokens = typeof settings?.maxTokens === 'number' && Number.isFinite(settings.maxTokens) && settings.maxTokens > 0
+    ? Math.round(settings.maxTokens)
+    : undefined
+  const normalized: PromptOptimizationSettings = {
+    enabled: settings?.enabled === true,
+    optimizePrompt,
+    model,
+    temperature,
+  }
+  if (maxTokens !== undefined) normalized.maxTokens = maxTokens
+  return normalized
 }

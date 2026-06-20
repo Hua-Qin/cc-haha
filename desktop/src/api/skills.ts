@@ -1,5 +1,10 @@
 import { api } from './client'
-import type { SkillMeta, SkillDetail } from '../types/skill'
+import type {
+  SkillMeta,
+  SkillDetail,
+  SkillInstallResult,
+  InstallableSkill,
+} from '../types/skill'
 
 export const skillsApi = {
   list: (cwd?: string) => {
@@ -18,5 +23,18 @@ export const skillsApi = {
       `/api/skills/detail?${query.toString()}`,
       { timeout: 120_000 },
     )
+  }
+
+  install: (source: string, options?: { overwrite?: boolean }) => {
+    return api.post<SkillInstallResult>('/api/skills/install', {
+      source,
+      overwrite: options?.overwrite ?? false,
+    })
+  },
+
+  listInstallable: () => {
+    return api.get<{ skills: InstallableSkill[] }>('/api/skills/installable', {
+      timeout: 120_000,
+    })
   },
 }

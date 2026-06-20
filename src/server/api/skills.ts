@@ -18,6 +18,7 @@ import { getSkillDirCommands } from '../../skills/loadSkillsDir.js'
 import { resetSettingsCache } from '../../utils/settings/settingsCache.js'
 import type { LoadedPlugin } from '../../types/plugin.js'
 import { ApiError, errorResponse } from '../middleware/errorHandler.js'
+import { handleSkillInstallApi } from './skillInstall.js'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -437,11 +438,15 @@ export async function handleSkillsApi(
   segments: string[],
 ): Promise<Response> {
   try {
+    const sub = segments[2]
+
+    if (sub === 'install' || sub === 'installable') {
+      return await handleSkillInstallApi(req, url, segments)
+    }
+
     if (req.method !== 'GET') {
       throw new ApiError(405, `Method ${req.method} not allowed`, 'METHOD_NOT_ALLOWED')
     }
-
-    const sub = segments[2]
 
     switch (sub) {
       case undefined:
