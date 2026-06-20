@@ -23,7 +23,7 @@ export const skillsApi = {
       `/api/skills/detail?${query.toString()}`,
       { timeout: 120_000 },
     )
-  }
+  },
 
   install: (source: string, options?: { overwrite?: boolean }) => {
     return api.post<SkillInstallResult>('/api/skills/install', {
