@@ -173,7 +173,7 @@ const DEFAULT_PROMPT_OPTIMIZATION_PROMPT =
 export const DEFAULT_PROMPT_OPTIMIZATION_SETTINGS: PromptOptimizationSettings = {
   enabled: true,
   optimizePrompt: DEFAULT_PROMPT_OPTIMIZATION_PROMPT,
-  model: 'haiku',
+  model: '',
   temperature: 0.3,
 }
 

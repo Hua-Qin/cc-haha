@@ -273,6 +273,71 @@ export function filterSlashCommands(
     .map((item) => item.command)
 }
 
+export type SlashCommandGroup = {
+  label: string | null
+  commands: SlashCommandOption[]
+}
+
+/**
+ * Groups slash commands into sections: pinned first, then custom categories,
+ * then remaining ungrouped commands. Within each group the original order
+ * (already sorted by filterSlashCommands) is preserved.
+ */
+export function groupSlashCommands(
+  commands: ReadonlyArray<SlashCommandOption>,
+  pinnedCommands?: ReadonlyArray<string>,
+  customCategories?: Record<string, string[]>,
+): SlashCommandGroup[] {
+  const pinnedSet = pinnedCommands && pinnedCommands.length > 0
+    ? new Set(pinnedCommands)
+    : null
+  const categories = customCategories && Object.keys(customCategories).length > 0
+    ? customCategories
+    : null
+
+  // If nothing to group by, return a single flat group
+  if (!pinnedSet && !categories) {
+    return [{ label: null, commands: [...commands] }]
+  }
+
+  // Build reverse map: commandName -> groupName
+  const commandToGroup = new Map<string, string>()
+  if (categories) {
+    for (const [groupName, cmdNames] of Object.entries(categories)) {
+      for (const cmdName of cmdNames) {
+        commandToGroup.set(cmdName, groupName)
+      }
+    }
+  }
+
+  const pinned: SlashCommandOption[] = []
+  const groupMap = new Map<string, SlashCommandOption[]>()
+  const ungrouped: SlashCommandOption[] = []
+
+  for (const cmd of commands) {
+    if (pinnedSet?.has(cmd.name)) {
+      pinned.push(cmd)
+      continue
+    }
+    const groupName = commandToGroup.get(cmd.name)
+    if (groupName) {
+      if (!groupMap.has(groupName)) groupMap.set(groupName, [])
+      groupMap.get(groupName)!.push(cmd)
+    } else {
+      ungrouped.push(cmd)
+    }
+  }
+
+  const groups: SlashCommandGroup[] = []
+  if (pinned.length > 0) groups.push({ label: '__pinned__', commands: pinned })
+  for (const [groupName, cmds] of groupMap) {
+    groups.push({ label: groupName, commands: cmds })
+  }
+  if (ungrouped.length > 0) groups.push({ label: null, commands: ungrouped })
+
+  return groups
+}
+
 export type SlashTrigger = {
   slashPos: number
   filter: string

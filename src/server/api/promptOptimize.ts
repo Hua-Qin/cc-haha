@@ -9,14 +9,10 @@
 
 import { APIUserAbortError } from '@anthropic-ai/sdk'
 import { queryWithModel } from '../../services/api/claude.js'
-import {
-  getAuthTokenSource,
-  hasAnthropicApiKeyAuth,
-  isUsing3PServices,
-} from '../../utils/auth.js'
 import { logError } from '../../utils/log.js'
 import { getAssistantMessageText } from '../../utils/messages.js'
 import {
+  getMainLoopModel,
   getSmallFastModel,
   parseUserSpecifiedModel,
 } from '../../utils/model/model.js'
@@ -24,6 +20,7 @@ import { asSystemPrompt } from '../../utils/systemPromptType.js'
 import { getEmptyToolPermissionContext } from '../../Tool.js'
 import { ApiError, errorResponse } from '../middleware/errorHandler.js'
 import { SettingsService } from '../services/settingsService.js'
+import { ProviderService } from '../services/providerService.js'
 import type { PromptOptimizationSettings } from '../services/settingsService.js'
 
 const DEFAULT_OPTIMIZE_PROMPT =
@@ -147,7 +144,8 @@ async function loadOptimizationSettings(): Promise<PromptOptimizationSettings> {
 
   const enabled = isPlainObject(raw) && raw.enabled !== false
   const optimizePrompt = pickString(raw, 'optimizePrompt') || DEFAULT_OPTIMIZE_PROMPT
-  const modelInput = pickString(raw, 'model') || DEFAULT_OPTIMIZE_MODEL
+  // Empty string means "use the currently active model" (getMainLoopModel)
+  const modelInput = pickString(raw, 'model') ?? ''
   const temperature = pickNumber(raw, 'temperature', DEFAULT_OPTIMIZE_TEMPERATURE)
   const maxTokens = pickNumber(raw, 'maxTokens', DEFAULT_OPTIMIZE_MAX_TOKENS)
 
@@ -191,16 +189,18 @@ async function optimizePrompt(params: {
 }): Promise<string> {
   const { text, recentMessages, settings } = params
 
-  const hasOAuthToken = getAuthTokenSource().hasToken
-  const hasApiKey = hasAnthropicApiKeyAuth()
-  const using3P = isUsing3PServices()
-  if (!hasOAuthToken && !hasApiKey && !using3P) {
+  // Use providerService.checkAuthStatus() which checks cc-haha provider config,
+  // env vars, and original settings — more accurate than env-only checks.
+  const providerService = new ProviderService()
+  const authStatus = await providerService.checkAuthStatus()
+  if (!authStatus.hasAuth) {
     throw ApiError.badRequest(
-      '请先登录或在服务商设置中配置 API Key后再使用提示词优化',
+      '请先登录或在服务商设置中配置 API Key 后再使用提示词优化',
     )
   }
 
-  const model = resolveModel(settings.model)
+  // When no explicit model is configured, use the currently active model.
+  const model = settings.model ? resolveModel(settings.model) : getMainLoopModel()
   const userPrompt = buildUserPrompt(text, recentMessages)
   const signal = AbortSignal.timeout(REQUEST_TIMEOUT_MS)
 

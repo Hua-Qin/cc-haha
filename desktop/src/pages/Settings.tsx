@@ -3162,7 +3162,7 @@ export function GeneralSettings() {
               <Input
                 value={promptOptimization.model}
                 onChange={(e) => setPromptOptimization({ ...promptOptimization, model: e.target.value })}
-                placeholder="haiku"
+                placeholder={t('settings.promptOptimization.modelPlaceholder')}
                 className="text-xs"
               />
             </div>
@@ -4405,6 +4405,9 @@ function CommandManagementSettings() {
     })
   }, [commands, normalizedSearch])
 
+  const customCategories = commandManagement.customCategories || {}
+  const groupNames = Object.keys(customCategories)
+
   const grouped = useMemo(() => {
     const groups: Record<CommandSource, CommandMeta[]> = {
       builtin: [],
@@ -4413,14 +4416,18 @@ function CommandManagementSettings() {
       mcp: [],
       bundled: [],
     }
+    // Build a set of command names already assigned to custom groups
+    const assignedToGroup = new Set<string>()
+    for (const names of Object.values(customCategories)) {
+      for (const name of names) assignedToGroup.add(name)
+    }
     for (const command of filteredCommands) {
+      // Skip commands that are already in a custom group (they show there only)
+      if (assignedToGroup.has(command.name)) continue
       groups[command.source]?.push(command)
     }
     return groups
-  }, [filteredCommands])
-
-  const customCategories = commandManagement.customCategories || {}
-  const groupNames = Object.keys(customCategories)
+  }, [filteredCommands, customCategories])
 
   const togglePin = (commandName: string) => {
     const next = pinnedSet.has(commandName)

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
-import { Sparkles } from 'lucide-react'
+import { Sparkles, Star } from 'lucide-react'
 import { useTranslation } from '../../i18n'
 import { useChatStore } from '../../stores/chatStore'
 import { SETTINGS_TAB_ID, useTabStore } from '../../stores/tabStore'
@@ -32,6 +32,7 @@ import {
   getLocalizedFallbackCommands,
   filterSlashCommands,
   findSlashTrigger,
+  groupSlashCommands,
   mergeSlashCommands,
   replaceSlashToken,
   resolveSlashUiAction,
@@ -154,6 +155,7 @@ export function ChatInput({ variant = 'default', compact = false }: ChatInputPro
   const chatSendBehavior = useSettingsStore((state) => state.chatSendBehavior)
   const promptOptimizationEnabled = useSettingsStore((state) => state.promptOptimization.enabled)
   const pinnedCommands = useSettingsStore((state) => state.commandManagement.pinnedCommands)
+  const customCategories = useSettingsStore((state) => state.commandManagement.customCategories)
   const runtimeSelectionKey = runtimeSelection
     ? `${runtimeSelection.providerId ?? 'official'}:${runtimeSelection.modelId}:${runtimeSelection.effortLevel ?? 'auto'}`
     : undefined
@@ -469,6 +471,10 @@ export function ChatInput({ variant = 'default', compact = false }: ChatInputPro
   const filteredCommands = useMemo(() => {
     return filterSlashCommands(allSlashCommands, slashFilter, pinnedCommands)
   }, [allSlashCommands, slashFilter, pinnedCommands])
+
+  const groupedSlashCommands = useMemo(() => {
+    return groupSlashCommands(filteredCommands, pinnedCommands, customCategories)
+  }, [filteredCommands, pinnedCommands, customCategories])
 
   const exactSlashCommand = useMemo(() => {
     const normalized = slashFilter.trim().toLowerCase()
@@ -1103,38 +1109,65 @@ export function ChatInput({ variant = 'default', compact = false }: ChatInputPro
               className="absolute bottom-full left-0 right-0 z-50 mb-2 overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-container-lowest)] shadow-[var(--shadow-dropdown)]"
             >
               <div className="max-h-[300px] overflow-y-auto py-1">
-                {filteredCommands.map((command, index) => (
-                  <button
-                    key={command.name}
-                    ref={(el) => { slashItemRefs.current[index] = el }}
-                    onClick={() => selectSlashCommand(command.name)}
-                    onMouseEnter={() => setSlashSelectedIndex(index)}
-                    className={`flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors ${
-                      index === slashSelectedIndex
-                        ? 'bg-[var(--color-surface-hover)]'
-                        : 'hover:bg-[var(--color-surface-hover)]'
-                    }`}
-                  >
-                    <span className="flex min-w-0 max-w-[52%] shrink-0 items-baseline gap-1.5">
-                      <span className="shrink-0 text-sm font-semibold text-[var(--color-text-primary)]">
-                        /{command.name}
-                      </span>
-                      {command.category ? (
-                        <span className="shrink-0 rounded bg-[var(--color-surface-container-high)] px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-[var(--color-text-tertiary)]">
-                          {command.category}
-                        </span>
-                      ) : null}
-                      {command.argumentHint ? (
-                        <span className="min-w-0 truncate font-mono text-[11px] text-[var(--color-text-tertiary)]">
-                          {command.argumentHint}
-                        </span>
-                      ) : null}
-                    </span>
-                    <span className="min-w-0 flex-1 truncate text-xs text-[var(--color-text-tertiary)]">
-                      {command.description}
-                    </span>
-                  </button>
-                ))}
+                {(() => {
+                  let flatIndex = 0
+                  return groupedSlashCommands.map((group, groupIdx) => (
+                    <div key={groupIdx}>
+                      {group.label !== null && group.commands.length > 0 && (
+                        <div className="flex items-center gap-1.5 px-4 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wide text-[var(--color-text-tertiary)]">
+                          {group.label === '__pinned__' ? (
+                            <>
+                              <Star className="h-3 w-3 fill-current text-[var(--color-warning)]" />
+                              {t('commands.pin')}
+                            </>
+                          ) : (
+                            <span className="material-symbols-outlined text-[12px]">{t('commands.group.title')}</span>
+                          )}
+                          <span className="font-normal normal-case tracking-normal opacity-60">{group.label === '__pinned__' ? '' : group.label}</span>
+                        </div>
+                      )}
+                      {group.commands.map((command) => {
+                        const currentIndex = flatIndex++
+                        const isPinned = group.label === '__pinned__'
+                        return (
+                          <button
+                            key={command.name}
+                            ref={(el) => { slashItemRefs.current[currentIndex] = el }}
+                            onClick={() => selectSlashCommand(command.name)}
+                            onMouseEnter={() => setSlashSelectedIndex(currentIndex)}
+                            className={`flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors ${
+                              currentIndex === slashSelectedIndex
+                                ? 'bg-[var(--color-surface-hover)]'
+                                : 'hover:bg-[var(--color-surface-hover)]'
+                            }`}
+                          >
+                            <span className="flex min-w-0 max-w-[52%] shrink-0 items-baseline gap-1.5">
+                              {isPinned && (
+                                <Star className="h-3 w-3 shrink-0 fill-current text-[var(--color-warning)]" />
+                              )}
+                              <span className="shrink-0 text-sm font-semibold text-[var(--color-text-primary)]">
+                                /{command.name}
+                              </span>
+                              {command.category ? (
+                                <span className="shrink-0 rounded bg-[var(--color-surface-container-high)] px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-[var(--color-text-tertiary)]">
+                                  {command.category}
+                                </span>
+                              ) : null}
+                              {command.argumentHint ? (
+                                <span className="min-w-0 truncate font-mono text-[11px] text-[var(--color-text-tertiary)]">
+                                  {command.argumentHint}
+                                </span>
+                              ) : null}
+                            </span>
+                            <span className="min-w-0 flex-1 truncate text-xs text-[var(--color-text-tertiary)]">
+                              {command.description}
+                            </span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  ))
+                })()}
               </div>
               {!isMobileComposer ? (
                 <div className="flex items-center gap-1.5 border-t border-[var(--color-border)] px-4 py-2 text-xs text-[var(--color-text-tertiary)]">
