@@ -13,6 +13,13 @@ const targetTriple =
 
 const bunTarget = mapTargetTripleToBun(targetTriple)
 
+// The Electron runtime's resolveHostTriple() always maps ia32 Electron to
+// 'x86_64-pc-windows-msvc' because the sidecar is a separate x64 child process.
+// So the output filename must use the runtime-facing triple, not the build triple.
+const runtimeTriple = targetTriple === 'i686-pc-windows-msvc'
+  ? 'x86_64-pc-windows-msvc'
+  : targetTriple
+
 // 编译前先扫一遍 src/ 把所有缺失的 ant-internal 模块在磁盘上 stub 出来。
 // 见 desktop/scripts/scan-missing-imports.ts。
 console.log('[build-sidecars] scanning for missing imports...')
@@ -32,7 +39,7 @@ await mkdir(binariesDir, { recursive: true })
 // 通过第一个 positional 参数选择 'server' 或 'cli' 模式，详见 desktop/sidecars/claude-sidecar.ts。
 await compileExecutable({
   entrypoint: path.join(desktopRoot, 'sidecars/claude-sidecar.ts'),
-  outfileBase: path.join(binariesDir, `claude-sidecar-${targetTriple}`),
+  outfileBase: path.join(binariesDir, `claude-sidecar-${runtimeTriple}`),
   productName: 'Claude Code Sidecar',
   bunTarget,
 })
