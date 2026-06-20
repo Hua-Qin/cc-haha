@@ -554,9 +554,12 @@ function inspectMacosArtifacts(rootDir: string, report: PackageSmokeReport, opti
 function inspectWindowsArtifacts(rootDir: string, report: PackageSmokeReport) {
   const installers = findMatches(report.artifactsDir, (candidate) => {
     const normalized = normalizePath(candidate)
-    return normalized.endsWith('.exe') && !normalized.includes('/win-unpacked/')
+    return normalized.endsWith('.exe') && !normalized.includes('/win-unpacked/') && !normalized.includes('/win-ia32-unpacked/')
   })
-  const unpackedDir = findMatches(report.artifactsDir, (candidate) => normalizePath(candidate).endsWith('/win-unpacked'), { directoriesOnly: true })[0]
+  const unpackedDir = findMatches(report.artifactsDir, (candidate) => {
+    const normalized = normalizePath(candidate)
+    return normalized.endsWith('/win-unpacked') || normalized.endsWith('/win-ia32-unpacked')
+  }, { directoriesOnly: true })[0]
   const electronDir = join(report.artifactsDir, 'electron')
   const updateMetadata = findMatches(report.artifactsDir, (candidate) => candidate.endsWith('latest.yml'))
   const releaseMode = report.packageKind === 'release' || (report.packageKind === 'auto' && (installers.length > 0 || updateMetadata.length > 0))
@@ -608,7 +611,7 @@ function inspectWindowsArtifacts(rootDir: string, report: PackageSmokeReport) {
     )
   } else {
     report.missingChecks.push({
-      label: 'Windows unpacked directory (win-unpacked) for static resource inspection',
+      label: 'Windows unpacked directory (win-unpacked or win-ia32-unpacked) for static resource inspection',
       path: toRelative(rootDir, join(electronDir, 'win-unpacked')),
     })
   }
