@@ -9,6 +9,11 @@
 
 import { APIUserAbortError } from '@anthropic-ai/sdk'
 import { queryWithModel } from '../../services/api/claude.js'
+import {
+  getAuthTokenSource,
+  hasAnthropicApiKeyAuth,
+  isUsing3PServices,
+} from '../../utils/auth.js'
 import { logError } from '../../utils/log.js'
 import { getAssistantMessageText } from '../../utils/messages.js'
 import {
@@ -162,6 +167,46 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value)
 }
 
+/**
+ * Comprehensive authentication check.
+ *
+ * Checks ALL auth sources the CLI supports, in priority order:
+ *   1. CLI native auth (getAuthTokenSource + hasAnthropicApiKeyAuth + isUsing3PServices)
+ *      — covers OAuth tokens (claude /login), ANTHROPIC_AUTH_TOKEN env,
+ *        CLAUDE_CODE_OAUTH_TOKEN, apiKeyHelper, file-descriptor tokens, etc.
+ *   2. cc-haha provider config (ProviderService.checkAuthStatus)
+ *      — covers provider presets configured via the desktop UI.
+ *
+ * If ANY source has auth, the user is considered authenticated.
+ */
+async function ensureAuthenticated(): Promise<void> {
+  // 1. Check CLI native auth sources first (fastest, synchronous)
+  const authTokenSource = getAuthTokenSource()
+  if (authTokenSource.hasToken) {
+    return
+  }
+
+  if (hasAnthropicApiKeyAuth()) {
+    return
+  }
+
+  if (isUsing3PServices()) {
+    return
+  }
+
+  // 2. Check cc-haha provider configuration
+  const providerService = new ProviderService()
+  const authStatus = await providerService.checkAuthStatus()
+  if (authStatus.hasAuth) {
+    return
+  }
+
+  // 3. No auth found from any source
+  throw ApiError.badRequest(
+    '请先登录或在服务商设置中配置 API Key 后再使用提示词优化',
+  )
+}
+
 function pickString(
   source: unknown,
   key: string,
@@ -189,15 +234,10 @@ async function optimizePrompt(params: {
 }): Promise<string> {
   const { text, recentMessages, settings } = params
 
-  // Use providerService.checkAuthStatus() which checks cc-haha provider config,
-  // env vars, and original settings — more accurate than env-only checks.
-  const providerService = new ProviderService()
-  const authStatus = await providerService.checkAuthStatus()
-  if (!authStatus.hasAuth) {
-    throw ApiError.badRequest(
-      '请先登录或在服务商设置中配置 API Key 后再使用提示词优化',
-    )
-  }
+  // Comprehensive auth check using CLI's native auth detection.
+  // This covers ALL auth sources: OAuth tokens (claude /login), API keys,
+  // cc-haha provider configs, 3P services (Bedrock/Vertex/Foundry), etc.
+  await ensureAuthenticated()
 
   // When no explicit model is configured, use the currently active model.
   const model = settings.model ? resolveModel(settings.model) : getMainLoopModel()
