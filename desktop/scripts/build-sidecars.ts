@@ -71,6 +71,12 @@ function mapTargetTripleToBun(triple: string) {
       // Prefer baseline on Windows x64 so older CPUs do not crash before the
       // desktop app can even start the local sidecar process.
       return 'bun-windows-x64-baseline'
+    case 'i686-pc-windows-msvc':
+      // Bun does not ship a 32-bit Windows binary. Use the x64 baseline
+      // sidecar — ia32 Electron apps run on x64 Windows via WoW64, where
+      // the x64 sidecar process works as a separate child process.
+      console.warn('[build-sidecars] i686 target: using x64 baseline sidecar (requires x64 Windows)')
+      return 'bun-windows-x64-baseline'
     case 'aarch64-pc-windows-msvc':
       return 'bun-windows-arm64'
     case 'x86_64-unknown-linux-gnu':
