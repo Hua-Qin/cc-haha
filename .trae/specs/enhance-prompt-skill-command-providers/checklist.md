@@ -38,11 +38,11 @@
 - [ ] 命令分类在设置管理界面中准确显示
 
 ## 部署
-- [ ] 代码已同步至 GitHub 仓库 `https://github.com/Hua-Qin/cc-haha`
-- [ ] Windows x86（ia32）架构构建成功，无错误
-- [ ] 构建产物可正常运行
+- [x] 代码已同步至 GitHub 仓库 `https://github.com/Hua-Qin/cc-haha`
+- [x] Windows x86（ia32）架构构建成功，无错误
+- [x] 构建产物可正常运行
 
 ## 代码质量
-- [ ] `cd desktop && bun run lint`（TypeScript 类型检查）通过
-- [ ] `cd desktop && bun run test -- --run`（单元测试）通过
-- [ ] 新增的 i18n 翻译条目覆盖所有支持语言（en/zh/zh-TW/jp/kr）
+- [x] `cd desktop && bun run lint`（TypeScript 类型检查）通过
+- [x] `cd desktop && bun run test -- --run`（单元测试）通过
+- [x] 新增的 i18n 翻译条目覆盖所有支持语言（en/zh/zh-TW/jp/kr）

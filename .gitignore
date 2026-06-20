@@ -80,3 +80,7 @@ CLAUDE.md
 .mavis/
 .opencode/
 graphify-out/
+
+# Git repository backups (local only)
+.git.backup.*/
+.git.corrupted.*/

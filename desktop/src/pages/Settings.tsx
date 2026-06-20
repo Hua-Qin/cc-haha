@@ -5,6 +5,8 @@ import {
   DndContext,
   KeyboardSensor,
   PointerSensor,
+  useDraggable,
+  useDroppable,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -47,7 +49,7 @@ import { McpSettings } from './McpSettings'
 import { TerminalSettings } from './TerminalSettings'
 import { DiagnosticsSettings } from './DiagnosticsSettings'
 import { commandsApi, type CommandMeta, type CommandSource } from '../api/commands'
-import { Star, StarOff, Move, Edit2, Trash2 } from 'lucide-react'
+import { Star, StarOff, Edit2, Trash2 } from 'lucide-react'
 import { TraceList } from './TraceList'
 import { ActivitySettings } from './ActivitySettings'
 import { MemorySettings } from './MemorySettings'
@@ -4258,6 +4260,93 @@ const COMMAND_SOURCE_ICONS: Record<CommandSource, string> = {
   bundled: 'inventory_2',
 }
 
+function DraggableCommandRow({ command, isPinned, currentGroup, onTogglePin, t }: {
+  command: CommandMeta
+  isPinned: boolean
+  currentGroup?: string
+  onTogglePin: () => void
+  t: (key: TranslationKey, options?: Record<string, string | number>) => string
+}) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: `cmd:${command.name}`,
+  })
+  const style: CSSProperties = {
+    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
+    opacity: isDragging ? 0.4 : 1,
+    zIndex: isDragging ? 50 : undefined,
+  }
+  return (
+    <li
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center gap-2 rounded-lg border border-[var(--color-border-separator)] bg-[var(--color-surface-container-lowest)] px-3 py-2.5"
+      data-testid={`command-row-${command.name}`}
+    >
+      <button
+        type="button"
+        {...listeners}
+        {...attributes}
+        className="flex h-7 w-5 shrink-0 cursor-grab items-center justify-center rounded text-[var(--color-text-tertiary)] transition-colors hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-primary)] active:cursor-grabbing"
+        aria-label={t('commands.group.dragHint')}
+        title={t('commands.group.dragHint')}
+      >
+        <GripVertical className="h-4 w-4" />
+      </button>
+      <button
+        type="button"
+        onClick={onTogglePin}
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-[var(--color-text-tertiary)] transition-colors hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-primary)]"
+        aria-label={isPinned ? t('commands.unpin') : t('commands.pin')}
+        title={isPinned ? t('commands.unpin') : t('commands.pin')}
+        data-testid={`command-pin-${command.name}`}
+      >
+        {isPinned ? (
+          <Star className="h-4 w-4 fill-current text-[var(--color-warning)]" />
+        ) : (
+          <StarOff className="h-4 w-4" />
+        )}
+      </button>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex items-center gap-2">
+          <span className="truncate font-mono text-sm text-[var(--color-text-primary)]">
+            /{command.name}
+          </span>
+          <span className="rounded bg-[var(--color-surface-container-high)] px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-[var(--color-text-tertiary)]">
+            {t(`commands.category.${command.source}`)}
+          </span>
+          {currentGroup && (
+            <span className="rounded bg-[var(--color-brand)]/10 px-1.5 py-0.5 text-[10px] font-medium text-[var(--color-brand)]">
+              {currentGroup}
+            </span>
+          )}
+        </div>
+        <span className="truncate text-xs text-[var(--color-text-tertiary)]">
+          {command.description}
+        </span>
+      </div>
+    </li>
+  )
+}
+
+function GroupDropZone({ dropId, children }: {
+  dropId: string
+  children: ReactNode
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id: dropId })
+  return (
+    <div
+      ref={setNodeRef}
+      className={`rounded-lg border transition-colors ${
+        isOver
+          ? 'border-[var(--color-brand)] bg-[var(--color-brand)]/5'
+          : 'border-[var(--color-border)] bg-[var(--color-surface)]'
+      }`}
+    >
+      {children}
+    </div>
+  )
+}
+
 function CommandManagementSettings() {
   const t = useTranslation()
   const commandManagement = useSettingsStore((s) => s.commandManagement)
@@ -4269,8 +4358,15 @@ function CommandManagementSettings() {
   const [editingGroup, setEditingGroup] = useState<string | null>(null)
   const [groupNameInput, setGroupNameInput] = useState('')
   const [groupError, setGroupError] = useState('')
+  const [showGroupForm, setShowGroupForm] = useState(false)
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
-  const [moveCommandMenu, setMoveCommandMenu] = useState<{ commandName: string; x: number; y: number } | null>(null)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  )
+
+  const { setNodeRef: setUncategorizedRef, isOver: isOverUncategorized } = useDroppable({ id: 'uncategorized' })
 
   useEffect(() => {
     let cancelled = false
@@ -4355,6 +4451,7 @@ function CommandManagementSettings() {
     void setCommandManagement({ ...commandManagement, customCategories: newCategories })
     setGroupNameInput('')
     setEditingGroup(null)
+    setShowGroupForm(false)
   }
 
   const editGroup = () => {
@@ -4371,6 +4468,7 @@ function CommandManagementSettings() {
     if (editingGroup === newName) {
       setEditingGroup(null)
       setGroupNameInput('')
+      setShowGroupForm(false)
       return
     }
     const newCategories: Record<string, string[]> = {}
@@ -4384,6 +4482,7 @@ function CommandManagementSettings() {
     void setCommandManagement({ ...commandManagement, customCategories: newCategories })
     setEditingGroup(null)
     setGroupNameInput('')
+    setShowGroupForm(false)
   }
 
   const deleteGroup = (groupName: string) => {
@@ -4395,14 +4494,32 @@ function CommandManagementSettings() {
   const moveCommandToGroup = (commandName: string, targetGroup: string | null) => {
     const newCategories = { ...customCategories }
     for (const [name, commandNames] of Object.entries(newCategories)) {
-      newCategories[name] = commandNames.filter((name) => name !== commandName)
+      newCategories[name] = commandNames.filter((n) => n !== commandName)
     }
-    if (targetGroup && targetGroup !== 'none') {
+    if (targetGroup) {
       if (!newCategories[targetGroup]) newCategories[targetGroup] = []
       newCategories[targetGroup].push(commandName)
     }
     void setCommandManagement({ ...commandManagement, customCategories: newCategories })
-    setMoveCommandMenu(null)
+  }
+
+  const handleCommandDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+    if (!over) return
+
+    const activeId = String(active.id)
+    if (!activeId.startsWith('cmd:')) return
+    const commandName = activeId.slice(4)
+
+    const overId = String(over.id)
+    if (overId === 'uncategorized') {
+      moveCommandToGroup(commandName, null)
+    } else if (overId.startsWith('group:')) {
+      const groupName = overId.slice(6)
+      if (getCommandGroup(commandName) !== groupName) {
+        moveCommandToGroup(commandName, groupName)
+      }
+    }
   }
 
   const toggleGroupExpand = (groupName: string) => {
@@ -4420,80 +4537,27 @@ function CommandManagementSettings() {
     return commands.filter((cmd) => commandNames.includes(cmd.name))
   }
 
-  const handleMoveButtonClick = (e: React.MouseEvent, commandName: string) => {
-    e.preventDefault()
-    const rect = e.currentTarget.getBoundingClientRect()
-    setMoveCommandMenu({
-      commandName,
-      x: rect.left,
-      y: rect.bottom + 4,
-    })
-  }
-
-  useEffect(() => {
-    const handleClick = () => setMoveCommandMenu(null)
-    document.addEventListener('click', handleClick)
-    return () => document.removeEventListener('click', handleClick)
-  }, [])
-
-  const commandRow = (command: CommandMeta, showGroupMenu = true) => {
+  const renderCommandRow = (command: CommandMeta) => {
     const isPinned = pinnedSet.has(command.name)
     const currentGroup = getCommandGroup(command.name)
-
     return (
-      <li
+      <DraggableCommandRow
         key={command.name}
-        className="flex items-center gap-2 rounded-lg border border-[var(--color-border-separator)] bg-[var(--color-surface-container-lowest)] px-3 py-2.5"
-        data-testid={`command-row-${command.name}`}
-      >
-        <button
-          type="button"
-          onClick={() => togglePin(command.name)}
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-[var(--color-text-tertiary)] transition-colors hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-primary)]"
-          aria-label={isPinned ? t('commands.unpin') : t('commands.pin')}
-          title={isPinned ? t('commands.unpin') : t('commands.pin')}
-          data-testid={`command-pin-${command.name}`}
-        >
-          {isPinned ? (
-            <Star className="h-4 w-4 fill-current text-[var(--color-warning)]" />
-          ) : (
-            <StarOff className="h-4 w-4" />
-          )}
-        </button>
-        <div className="flex min-w-0 flex-1 flex-col">
-          <div className="flex items-center gap-2">
-            <span className="truncate font-mono text-sm text-[var(--color-text-primary)]">
-              /{command.name}
-            </span>
-            <span className="rounded bg-[var(--color-surface-container-high)] px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-[var(--color-text-tertiary)]">
-              {t(`commands.category.${command.source}`)}
-            </span>
-            {currentGroup && (
-              <span className="rounded bg-[var(--color-brand)]/10 px-1.5 py-0.5 text-[10px] font-medium text-[var(--color-brand)]">
-                {currentGroup}
-              </span>
-            )}
-          </div>
-          <span className="truncate text-xs text-[var(--color-text-tertiary)]">
-            {command.description}
-          </span>
-        </div>
-        {showGroupMenu && (
-          <button
-            type="button"
-            onClick={(e) => handleMoveButtonClick(e, command.name)}
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-[var(--color-text-tertiary)] transition-colors hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-primary)]"
-            aria-label={t('commands.group.moveTo')}
-            title={t('commands.group.moveTo')}
-          >
-            <Move className="h-4 w-4" />
-          </button>
-        )}
-      </li>
+        command={command}
+        isPinned={isPinned}
+        currentGroup={currentGroup}
+        onTogglePin={() => togglePin(command.name)}
+        t={t}
+      />
     )
   }
 
   return (
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragEnd={handleCommandDragEnd}
+    >
     <div className="w-full min-w-0">
       <div className="mb-4">
         <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-1">
@@ -4531,19 +4595,20 @@ function CommandManagementSettings() {
               setEditingGroup(null)
               setGroupNameInput('')
               setGroupError('')
+              setShowGroupForm(true)
             }}
           >
             {t('commands.group.create')}
           </Button>
         </div>
 
-        {editingGroup === null && groupNameInput === '' && groupNames.length === 0 && (
+        {!showGroupForm && editingGroup === null && groupNames.length === 0 && (
           <div className="text-sm text-[var(--color-text-tertiary)] py-4">
             {t('commands.group.empty')}
           </div>
         )}
 
-        {editingGroup !== null || groupNameInput !== '' ? (
+        {showGroupForm || editingGroup !== null ? (
           <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-3 mb-3">
             <div className="text-xs font-medium text-[var(--color-text-secondary)] mb-2">
               {editingGroup ? t('commands.group.editTitle') : t('commands.group.createTitle')}
@@ -4570,6 +4635,7 @@ function CommandManagementSettings() {
                   setEditingGroup(null)
                   setGroupNameInput('')
                   setGroupError('')
+                  setShowGroupForm(false)
                 }}
               >
                 {t('common.cancel')}
@@ -4589,65 +4655,69 @@ function CommandManagementSettings() {
           {groupNames.map((groupName) => {
             const groupCommands = getCommandsInGroup(groupName)
             const isExpanded = expandedGroups.has(groupName)
+            const groupDropId = `group:${groupName}`
 
             return (
-              <div
+              <GroupDropZone
                 key={groupName}
-                className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden"
+                dropId={groupDropId}
               >
-                <div className="flex items-center justify-between px-3 py-2.5">
-                  <button
-                    type="button"
-                    onClick={() => toggleGroupExpand(groupName)}
-                    className="flex items-center gap-2 text-left"
-                  >
-                    <span className="material-symbols-outlined text-[14px] text-[var(--color-text-tertiary)]">
-                      {isExpanded ? 'expand_less' : 'expand_more'}
-                    </span>
-                    <span className="text-sm font-medium text-[var(--color-text-primary)]">
-                      {groupName}
-                    </span>
-                    <span className="text-xs text-[var(--color-text-tertiary)]">
-                      {t('commands.group.count', { count: groupCommands.length })}
-                    </span>
-                  </button>
-                  <div className="flex items-center gap-1">
+                <div className="overflow-hidden">
+                  <div className="flex items-center justify-between px-3 py-2.5">
                     <button
                       type="button"
-                      onClick={() => {
-                        setEditingGroup(groupName)
-                        setGroupNameInput(groupName)
-                        setGroupError('')
-                      }}
-                      className="flex h-6 w-6 items-center justify-center rounded text-[var(--color-text-tertiary)] transition-colors hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-primary)]"
-                      title={t('commands.group.edit')}
+                      onClick={() => toggleGroupExpand(groupName)}
+                      className="flex items-center gap-2 text-left"
                     >
-                      <Edit2 className="h-3.5 w-3.5" />
+                      <span className="material-symbols-outlined text-[14px] text-[var(--color-text-tertiary)]">
+                        {isExpanded ? 'expand_less' : 'expand_more'}
+                      </span>
+                      <span className="text-sm font-medium text-[var(--color-text-primary)]">
+                        {groupName}
+                      </span>
+                      <span className="text-xs text-[var(--color-text-tertiary)]">
+                        {t('commands.group.count', { count: groupCommands.length })}
+                      </span>
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => deleteGroup(groupName)}
-                      className="flex h-6 w-6 items-center justify-center rounded text-[var(--color-text-tertiary)] transition-colors hover:bg-[var(--color-error)]/10 hover:text-[var(--color-error)]"
-                      title={t('commands.group.delete')}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingGroup(groupName)
+                          setGroupNameInput(groupName)
+                          setGroupError('')
+                          setShowGroupForm(true)
+                        }}
+                        className="flex h-6 w-6 items-center justify-center rounded text-[var(--color-text-tertiary)] transition-colors hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-primary)]"
+                        title={t('commands.group.edit')}
+                      >
+                        <Edit2 className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => deleteGroup(groupName)}
+                        className="flex h-6 w-6 items-center justify-center rounded text-[var(--color-text-tertiary)] transition-colors hover:bg-[var(--color-error)]/10 hover:text-[var(--color-error)]"
+                        title={t('commands.group.delete')}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   </div>
+                  {isExpanded && (
+                    <div className="border-t border-[var(--color-border-separator)] px-3 py-2">
+                      {groupCommands.length === 0 ? (
+                        <div className="text-xs text-[var(--color-text-tertiary)] py-2">
+                          {t('commands.group.addCommands')}
+                        </div>
+                      ) : (
+                        <ul className="flex flex-col gap-1">
+                          {groupCommands.map((cmd) => renderCommandRow(cmd))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
                 </div>
-                {isExpanded && (
-                  <div className="border-t border-[var(--color-border-separator)] px-3 py-2">
-                    {groupCommands.length === 0 ? (
-                      <div className="text-xs text-[var(--color-text-tertiary)] py-2">
-                        {t('commands.group.addCommands')}
-                      </div>
-                    ) : (
-                      <ul className="flex flex-col gap-1">
-                        {groupCommands.map((cmd) => commandRow(cmd, false))}
-                      </ul>
-                    )}
-                  </div>
-                )}
-              </div>
+              </GroupDropZone>
             )
           })}
         </div>
@@ -4664,7 +4734,14 @@ function CommandManagementSettings() {
           {t('commands.empty')}
         </div>
       ) : (
-        <div className="flex flex-col gap-6">
+        <div
+          ref={setUncategorizedRef}
+          className={`flex flex-col gap-6 rounded-lg border transition-colors ${
+            isOverUncategorized
+              ? 'border-[var(--color-brand)] bg-[var(--color-brand)]/5 p-3'
+              : 'border-transparent p-0'
+          }`}
+        >
           {COMMAND_SOURCE_ORDER.map((source) => {
             const items = grouped[source]
             if (!items || items.length === 0) return null
@@ -4680,42 +4757,15 @@ function CommandManagementSettings() {
                   </span>
                 </h3>
                 <ul className="flex flex-col gap-1.5">
-                  {items.map((command) => commandRow(command))}
+                  {items.map((command) => renderCommandRow(command))}
                 </ul>
               </section>
             )
           })}
         </div>
       )}
-
-      {moveCommandMenu && (
-        <div
-          className="fixed z-50 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg py-1 min-w-[140px]"
-          style={{ left: moveCommandMenu.x, top: moveCommandMenu.y }}
-        >
-          <div className="px-3 py-1.5 text-xs font-medium text-[var(--color-text-tertiary)]">
-            {t('commands.group.moveTo')}
-          </div>
-          <button
-            type="button"
-            onClick={() => moveCommandToGroup(moveCommandMenu.commandName, null)}
-            className="w-full px-3 py-1.5 text-left text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)]"
-          >
-            {t('commands.group.moveToNone')}
-          </button>
-          {groupNames.map((groupName) => (
-            <button
-              key={groupName}
-              type="button"
-              onClick={() => moveCommandToGroup(moveCommandMenu.commandName, groupName)}
-              className="w-full px-3 py-1.5 text-left text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)]"
-            >
-              {groupName}
-            </button>
-          ))}
-        </div>
-      )}
     </div>
+    </DndContext>
   )
 }
 

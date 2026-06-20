@@ -643,11 +643,13 @@ export function ChatInput({ variant = 'default', compact = false }: ChatInputPro
         })
       }
     } catch (error) {
+      const message = error instanceof Error ? error.message : ''
+      const isAuthError = /登录|登入|login|API Key|API key|unauthorized/i.test(message)
       useUIStore.getState().addToast({
         type: 'error',
-        message: error instanceof Error && error.message
-          ? error.message
-          : t('chat.optimize.error'),
+        message: isAuthError
+          ? t('chat.optimize.authError')
+          : (message || t('chat.optimize.error')),
       })
     } finally {
       setIsOptimizingPrompt(false)

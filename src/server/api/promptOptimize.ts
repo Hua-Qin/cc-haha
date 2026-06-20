@@ -9,6 +9,11 @@
 
 import { APIUserAbortError } from '@anthropic-ai/sdk'
 import { queryWithModel } from '../../services/api/claude.js'
+import {
+  getAuthTokenSource,
+  hasAnthropicApiKeyAuth,
+  isUsing3PServices,
+} from '../../utils/auth.js'
 import { logError } from '../../utils/log.js'
 import { getAssistantMessageText } from '../../utils/messages.js'
 import {
@@ -140,7 +145,7 @@ async function loadOptimizationSettings(): Promise<PromptOptimizationSettings> {
   const userSettings = await settingsService.getUserSettings()
   const raw = (userSettings as Record<string, unknown>).promptOptimization
 
-  const enabled = isPlainObject(raw) && raw.enabled === true
+  const enabled = isPlainObject(raw) && raw.enabled !== false
   const optimizePrompt = pickString(raw, 'optimizePrompt') || DEFAULT_OPTIMIZE_PROMPT
   const modelInput = pickString(raw, 'model') || DEFAULT_OPTIMIZE_MODEL
   const temperature = pickNumber(raw, 'temperature', DEFAULT_OPTIMIZE_TEMPERATURE)
@@ -185,6 +190,15 @@ async function optimizePrompt(params: {
   settings: PromptOptimizationSettings
 }): Promise<string> {
   const { text, recentMessages, settings } = params
+
+  const hasOAuthToken = getAuthTokenSource().hasToken
+  const hasApiKey = hasAnthropicApiKeyAuth()
+  const using3P = isUsing3PServices()
+  if (!hasOAuthToken && !hasApiKey && !using3P) {
+    throw ApiError.badRequest(
+      '请先登录或在服务商设置中配置 API Key后再使用提示词优化',
+    )
+  }
 
   const model = resolveModel(settings.model)
   const userPrompt = buildUserPrompt(text, recentMessages)

@@ -72,10 +72,10 @@
   - [x] SubTask 11.4: 验证服务商：删除确认弹窗 → 所有服务商可编辑/删除
   - [x] SubTask 11.5: 运行 lint 和 typecheck（`cd desktop && bun run lint && bun run test -- --run`）
 
-- [ ] Task 12: GitHub 同步与 Windows 构建
-  - [ ] SubTask 12.1: 将代码提交并推送到 `https://github.com/Hua-Qin/cc-haha`（使用提供的 token）
-  - [ ] SubTask 12.2: 执行 Windows x86（ia32）架构构建（调整/新建构建脚本，确保 `electron-builder` target 包含 ia32）
-  - [ ] SubTask 12.3: 验证构建产物可正常运行
+- [x] Task 12: GitHub 同步与 Windows 构建
+  - [x] SubTask 12.1: 将代码提交并推送到 `https://github.com/Hua-Qin/cc-haha`（使用提供的 token）
+  - [x] SubTask 12.2: 执行 Windows x86（ia32）架构构建（调整/新建构建脚本，确保 `electron-builder` target 包含 ia32）
+  - [x] SubTask 12.3: 验证构建产物可正常运行（GitHub Actions Run #27863998557 全部步骤成功）
 
 # Task Dependencies
 
